@@ -1,0 +1,137 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: simplynotes-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "200420"
+      POSTGRES_DB: simplynotes
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: simplynotes-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.4
+    container_name: simplynotes-keycloak
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./keycloak/simplynotes-realm.json:/opt/keycloak/data/import/simplynotes-realm.json
+
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+    container_name: simplynotes-api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KEYCLOAK_URL: http://keycloak:8080
+      NOTE_SERVICE_URL: http://note-service:8082
+      AI_SERVICE_URL: http://ai-service:8083
+      UPLOAD_SERVICE_URL: http://upload-service:8084
+      SEARCH_SERVICE_URL: http://search-service:8085
+    depends_on:
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+
+  note-service:
+    build:
+      context: ./backend/note-service
+    container_name: simplynotes-note-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/simplynotes
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: "200420"
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/simplynotes
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/simplynotes/protocol/openid-connect/certs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+
+  ai-service:
+    build:
+      context: ./backend/ai-service
+    container_name: simplynotes-ai-service
+    ports:
+      - "8083:8083"
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/simplynotes
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/simplynotes/protocol/openid-connect/certs
+    depends_on:
+      keycloak:
+        condition: service_started
+
+  upload-service:
+    build:
+      context: ./backend/upload-service
+    container_name: simplynotes-upload-service
+    ports:
+      - "8084:8084"
+    environment:
+      UPLOAD_DIR: /uploads/
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/simplynotes
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/simplynotes/protocol/openid-connect/certs
+    volumes:
+      - uploads_data:/uploads
+    depends_on:
+      keycloak:
+        condition: service_started
+
+  search-service:
+    build:
+      context: ./backend/search-service
+    container_name: simplynotes-search-service
+    ports:
+      - "8085:8085"
+    environment:
+      NOTE_SERVICE_URL: http://note-service:8082
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/simplynotes
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/simplynotes/protocol/openid-connect/certs
+    depends_on:
+      - note-service
+      - keycloak
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: simplynotes-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api-gateway
+
+volumes:
+  postgres_data:
+  uploads_data:

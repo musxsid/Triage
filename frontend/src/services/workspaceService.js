@@ -2,36 +2,32 @@ import axios from "axios";
 
 const API = "http://localhost:8080/api";
 
-const getAuthHeaders = () => {
+const getAuthConfig = () => {
   const token = localStorage.getItem("token");
   return {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    withCredentials: true,
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
   };
 };
 
 export const getWorkspaces = () => {
-  return axios.get(`${API}/workspaces`, getAuthHeaders());
+  return axios.get(`${API}/workspaces`, getAuthConfig());
 };
 
 export const createWorkspace = (data) => {
-  return axios.post(`${API}/workspaces`, data, getAuthHeaders());
+  return axios.post(`${API}/workspaces`, data, getAuthConfig());
 };
 
 export const updateWorkspace = (id, data) => {
-  return axios.put(`${API}/workspaces/${id}`, data, getAuthHeaders());
+  return axios.put(`${API}/workspaces/${id}`, data, getAuthConfig());
 };
 
-// Delete a workspace completely
 export const deleteWorkspace = (id) => {
-  return axios.delete(`${API}/workspaces/${id}`, getAuthHeaders());
+  return axios.delete(`${API}/workspaces/${id}`, getAuthConfig());
 };
 
-// Added specifically for Workspace Cover Images
 export const uploadWorkspaceCover = (file) => {
   const formData = new FormData();
   formData.append("file", file);
-  // Reusing the same endpoint we built for the note images!
-  return axios.post(`${API}/upload/image`, formData, getAuthHeaders());
+  return axios.post(`${API}/upload/image`, formData, getAuthConfig());
 };

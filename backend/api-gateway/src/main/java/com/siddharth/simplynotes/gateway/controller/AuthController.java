@@ -7,7 +7,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
@@ -43,12 +42,13 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public Mono<ResponseEntity<?>> login(@RequestBody Map<String, String> creds, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Map<String, Object>>> login(@RequestBody Map<String, String> creds, ServerWebExchange exchange) {
         String username = creds.get("username");
         String password = creds.get("password");
 
         if (username == null || password == null) {
-            return Mono.just(ResponseEntity.badRequest().body(Map.of("error", "Username and password required")));
+            Map<String, Object> err = Map.of("error", "Username and password required");
+            return Mono.just(ResponseEntity.badRequest().body(err));
         }
 
         String tokenUrl = String.format("%s/realms/%s/protocol/openid-connect/token", keycloakUrl, realm);
@@ -67,11 +67,11 @@ public class AuthController {
                 .flatMap(tokenResponse -> {
                     String accessToken = (String) tokenResponse.get("access_token");
                     if (accessToken == null) {
-                        return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid credentials")));
+                        Map<String, Object> unauth = Map.of("error", "Invalid credentials");
+                        return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(unauth));
                     }
 
                     String sessionId = UUID.randomUUID().toString();
-                    // Store token in Redis for 24h
                     return redisTemplate.opsForValue()
                             .set("session:" + sessionId, accessToken, Duration.ofHours(24))
                             .map(saved -> {
@@ -83,32 +83,32 @@ public class AuthController {
                                         .build();
 
                                 exchange.getResponse().addCookie(cookie);
-                                return ResponseEntity.ok(Map.of(
+                                Map<String, Object> success = Map.of(
                                         "status", "success",
                                         "username", username,
                                         "sessionId", sessionId
-                                ));
+                                );
+                                return ResponseEntity.ok(success);
                             });
                 })
-                .onErrorResume(e -> Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("error", "Keycloak authentication failed: " + e.getMessage()))));
+                .onErrorResume(e -> {
+                    Map<String, Object> err = Map.of("error", "Keycloak authentication failed: " + e.getMessage());
+                    return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(err));
+                });
     }
 
     @PostMapping("/register")
-    public Mono<ResponseEntity<?>> register(@RequestBody Map<String, String> userReq) {
+    public Mono<ResponseEntity<Map<String, Object>>> register(@RequestBody Map<String, String> userReq) {
         String username = userReq.get("username");
         String password = userReq.get("password");
         String email = userReq.get("email");
 
-        // Attempt direct registration by contacting Keycloak Admin API or logging in with master admin if needed,
-        // or attempt user login check. For demo completeness:
         Map<String, Object> userPayload = new HashMap<>();
         userPayload.put("username", username);
         userPayload.put("enabled", true);
         userPayload.put("email", email != null ? email : username + "@example.com");
         userPayload.put("credentials", java.util.List.of(Map.of("type", "password", "value", password, "temporary", false)));
 
-        // Attempt admin token fetch
         String adminTokenUrl = String.format("%s/realms/master/protocol/openid-connect/token", keycloakUrl);
         MultiValueMap<String, String> adminCreds = new LinkedMultiValueMap<>();
         adminCreds.add("grant_type", "password");
@@ -131,17 +131,23 @@ public class AuthController {
                             .bodyValue(userPayload)
                             .retrieve()
                             .toBodilessEntity()
-                            .map(resp -> ResponseEntity.ok(Map.of("message", "User registered successfully")))
-                            .onErrorResume(err -> Mono.just(ResponseEntity.badRequest().body(Map.of("error", "User creation failed: " + err.getMessage()))));
+                            .map(resp -> {
+                                Map<String, Object> ok = Map.of("message", "User registered successfully");
+                                return ResponseEntity.ok(ok);
+                            })
+                            .onErrorResume(err -> {
+                                Map<String, Object> fail = Map.of("error", "User creation failed: " + err.getMessage());
+                                return Mono.just(ResponseEntity.badRequest().body(fail));
+                            });
                 })
                 .onErrorResume(err -> {
-                    // Fallback response encouraging login or auto-test user
-                    return Mono.just(ResponseEntity.ok(Map.of("message", "User registration submitted. You can now login.")));
+                    Map<String, Object> fallback = Map.of("message", "User registration submitted. You can now login.");
+                    return Mono.just(ResponseEntity.ok(fallback));
                 });
     }
 
     @PostMapping("/logout")
-    public Mono<ResponseEntity<?>> logout(ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Map<String, Object>>> logout(ServerWebExchange exchange) {
         HttpCookie cookie = exchange.getRequest().getCookies().getFirst("SESSIONID");
         ResponseCookie clearCookie = ResponseCookie.from("SESSIONID", "")
                 .httpOnly(true)
@@ -150,22 +156,27 @@ public class AuthController {
                 .build();
         exchange.getResponse().addCookie(clearCookie);
 
+        Map<String, Object> res = Map.of("message", "Logged out successfully");
         if (cookie != null) {
             return redisTemplate.opsForValue().delete("session:" + cookie.getValue())
-                    .thenReturn(ResponseEntity.ok(Map.of("message", "Logged out successfully")));
+                    .map(deleted -> ResponseEntity.ok(res));
         }
         return Mono.just(ResponseEntity.ok(Map.of("message", "Logged out")));
     }
 
     @GetMapping("/me")
-    public Mono<ResponseEntity<?>> getCurrentUser(ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Map<String, Object>>> getCurrentUser(ServerWebExchange exchange) {
         HttpCookie cookie = exchange.getRequest().getCookies().getFirst("SESSIONID");
         if (cookie == null) {
-            return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Not authenticated")));
+            Map<String, Object> err = Map.of("error", "Not authenticated");
+            return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(err));
         }
 
+        Map<String, Object> me = Map.of("authenticated", true, "session", cookie.getValue());
+        Map<String, Object> expired = Map.of("error", "Session expired");
+
         return redisTemplate.opsForValue().get("session:" + cookie.getValue())
-                .map(jwt -> ResponseEntity.ok(Map.of("authenticated", true, "session", cookie.getValue())))
-                .defaultIfEmpty(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Session expired")));
+                .map(jwt -> ResponseEntity.ok(me))
+                .defaultIfEmpty(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(expired));
     }
 }

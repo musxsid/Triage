@@ -59,10 +59,10 @@ function MoveToFolderModal({ open, onClose, note, onMoved }) {
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="relative w-full max-w-md bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[80vh]"
+            className="relative w-full max-w-md glass rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[80vh]"
           >
             {/* HEADER */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-border-dark">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/15 dark:border-white/8">
               <div>
                 <h3 className="text-lg font-bold text-text-primary dark:text-text-darkPrimary">
                   Move Note
@@ -73,7 +73,7 @@ function MoveToFolderModal({ open, onClose, note, onMoved }) {
               </div>
               <button
                 onClick={onClose}
-                className="p-2 rounded-xl hover:bg-muted dark:hover:bg-muted-dark text-text-secondary transition-colors"
+                className="p-2 rounded-xl hover:bg-white/30 dark:hover:bg-white/8 text-text-secondary transition-colors"
               >
                 <X size={20} />
               </button>
@@ -86,7 +86,7 @@ function MoveToFolderModal({ open, onClose, note, onMoved }) {
               <button
                 disabled={isLoading}
                 onClick={() => handleMove(null)} 
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-muted dark:hover:bg-muted-dark transition-colors text-left border border-transparent hover:border-border dark:hover:border-border-dark"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/30 dark:hover:bg-white/8 transition-colors text-left border border-transparent hover:border-white/20 dark:hover:border-white/10"
               >
                 <div className="w-10 h-10 rounded-lg bg-text-secondary/10 flex items-center justify-center text-text-secondary">
                   <LayoutGrid size={20} />
@@ -99,7 +99,7 @@ function MoveToFolderModal({ open, onClose, note, onMoved }) {
                 </div>
               </button>
 
-              <div className="h-px bg-border dark:bg-border-dark my-2 mx-2" />
+              <div className="h-px bg-white/15 dark:bg-white/8 my-2 mx-2" />
 
               {folders.length === 0 ? (
                 <div className="text-center py-6 text-sm text-text-secondary">
@@ -111,9 +111,9 @@ function MoveToFolderModal({ open, onClose, note, onMoved }) {
                     key={folder.id}
                     disabled={isLoading}
                     onClick={() => handleMove(folder.id)}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-muted dark:hover:bg-muted-dark transition-colors text-left border border-transparent hover:border-border dark:hover:border-border-dark"
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/30 dark:hover:bg-white/8 transition-colors text-left border border-transparent hover:border-white/20 dark:hover:border-white/10"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+                    <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center text-accent dark:text-accent-dark">
                       <Folder size={20} />
                     </div>
                     <div className="flex-1">

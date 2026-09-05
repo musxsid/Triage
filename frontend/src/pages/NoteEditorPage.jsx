@@ -248,8 +248,8 @@ function NoteEditorPage() {
     editor.chain()
       .focus()
       .insertContent(`
-        <div style="border-left: 4px solid #6366f1; padding-left: 16px; margin: 20px 0; color: #4b5563; background-color: rgba(99, 102, 241, 0.05); padding-top: 12px; padding-bottom: 12px; border-radius: 0 12px 12px 0;">
-          <p style="font-size: 11px; font-weight: 800; color: #6366f1; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">✨ Spark AI Suggestion</p>
+        <div style="border-left: 4px solid #E8784A; padding-left: 16px; margin: 20px 0; color: #4b5563; background-color: rgba(232, 120, 74, 0.05); padding-top: 12px; padding-bottom: 12px; border-radius: 0 12px 12px 0;">
+          <p style="font-size: 11px; font-weight: 800; color: #E8784A; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">✨ Spark AI Suggestion</p>
           ${aiResult}
         </div>
         <p></p>
@@ -262,6 +262,8 @@ function NoteEditorPage() {
   };
 
   if (!editor) return null;
+
+  const toolBtnClass = "p-1.5 rounded-lg hover:bg-white/40 dark:hover:bg-white/8 text-text-secondary hover:text-text-primary dark:hover:text-text-darkPrimary transition-colors";
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -276,7 +278,7 @@ function NoteEditorPage() {
           ← Back to Dashboard
         </button>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {id !== "new" && (
             <div className="text-xs text-text-secondary flex items-center gap-1">
               {isSaving ? (
@@ -288,13 +290,13 @@ function NoteEditorPage() {
           )}
 
           {id !== "new" && (
-            <div className="flex items-center gap-2 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark p-1 rounded-xl shadow-sm">
+            <div className="flex items-center gap-2 glass p-1 rounded-xl">
               <button
                 onClick={handleToggleShare}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition ${
                   isPublic 
                     ? "bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20" 
-                    : "text-text-secondary hover:bg-muted dark:hover:bg-muted-dark hover:text-text-primary"
+                    : "text-text-secondary hover:bg-white/40 dark:hover:bg-white/8 hover:text-text-primary"
                 }`}
               >
                 <Globe size={16} />
@@ -305,7 +307,7 @@ function NoteEditorPage() {
                 <button 
                   onClick={copyPublicLink}
                   title="Copy Link"
-                  className="p-1.5 rounded-lg text-text-secondary hover:bg-muted dark:hover:bg-muted-dark hover:text-text-primary transition"
+                  className="p-1.5 rounded-lg text-text-secondary hover:bg-white/40 dark:hover:bg-white/8 hover:text-text-primary transition"
                 >
                   <Copy size={16} />
                 </button>
@@ -315,7 +317,7 @@ function NoteEditorPage() {
 
           <button
             onClick={() => handleSave(true)}
-            className="bg-accent dark:bg-accent-dark text-white dark:text-background-dark px-5 py-2 rounded-xl text-sm font-semibold shadow-sm hover:opacity-90 transition"
+            className="bg-gradient-to-r from-accent to-accent-secondary text-white px-5 py-2 rounded-xl text-sm font-bold shadow-lg shadow-accent/20 hover:shadow-accent/30 transition-all"
           >
             Save Note
           </button>
@@ -333,7 +335,7 @@ function NoteEditorPage() {
         <select
           value={selectedFolder || ""}
           onChange={(e) => setSelectedFolder(e.target.value)}
-          className="px-4 py-2 rounded-xl text-sm font-medium bg-surface dark:bg-surface-dark border border-border dark:border-border-dark text-text-primary dark:text-text-darkPrimary outline-none focus:border-text-secondary cursor-pointer transition-colors"
+          className="px-4 py-2 rounded-xl text-sm font-medium glass text-text-primary dark:text-text-darkPrimary outline-none cursor-pointer transition-colors"
         >
           <option value="">No Folder</option>
           {folders.map((f) => (
@@ -342,14 +344,14 @@ function NoteEditorPage() {
         </select>
       </div>
 
-      {/* TOOLBAR */}
-      <div className="bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-t-2xl px-4 py-3 border-b flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-1 pr-4 border-r border-border/50 dark:border-border-dark/50">
-          <button className="p-1.5 rounded hover:bg-muted dark:hover:bg-muted-dark text-text-secondary transition-colors" onClick={() => editor.chain().focus().undo().run()}><Undo2 size={18} /></button>
-          <button className="p-1.5 rounded hover:bg-muted dark:hover:bg-muted-dark text-text-secondary transition-colors" onClick={() => editor.chain().focus().redo().run()}><Redo2 size={18} /></button>
+      {/* TOOLBAR — Glassmorphic */}
+      <div className="glass rounded-t-2xl px-4 py-3 border-b-0 flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-1 pr-4 border-r border-white/20 dark:border-white/8">
+          <button className={toolBtnClass} onClick={() => editor.chain().focus().undo().run()}><Undo2 size={18} /></button>
+          <button className={toolBtnClass} onClick={() => editor.chain().focus().redo().run()}><Redo2 size={18} /></button>
         </div>
 
-        <div className="flex items-center gap-2 pr-4 border-r border-border/50 dark:border-border-dark/50">
+        <div className="flex items-center gap-2 pr-4 border-r border-white/20 dark:border-white/8">
           <select className="bg-transparent text-sm font-medium text-text-secondary outline-none cursor-pointer" onChange={(e) => editor.chain().focus().setFontFamily(e.target.value).run()}>
             <option>Arial</option>
             <option>Times New Roman</option>
@@ -365,32 +367,32 @@ function NoteEditorPage() {
           </select>
         </div>
 
-        <div className="flex items-center gap-1 pr-4 border-r border-border/50 dark:border-border-dark/50">
-          <button className={`p-1.5 rounded ${editor.isActive('bold') ? 'bg-muted' : ''}`} onClick={() => editor.chain().focus().toggleBold().run()}><Bold size={18} /></button>
-          <button className={`p-1.5 rounded ${editor.isActive('italic') ? 'bg-muted' : ''}`} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic size={18} /></button>
-          <button className={`p-1.5 rounded ${editor.isActive('underline') ? 'bg-muted' : ''}`} onClick={() => editor.chain().focus().toggleUnderline().run()}><UnderlineIcon size={18} /></button>
+        <div className="flex items-center gap-1 pr-4 border-r border-white/20 dark:border-white/8">
+          <button className={`${toolBtnClass} ${editor.isActive('bold') ? 'bg-white/40 dark:bg-white/10' : ''}`} onClick={() => editor.chain().focus().toggleBold().run()}><Bold size={18} /></button>
+          <button className={`${toolBtnClass} ${editor.isActive('italic') ? 'bg-white/40 dark:bg-white/10' : ''}`} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic size={18} /></button>
+          <button className={`${toolBtnClass} ${editor.isActive('underline') ? 'bg-white/40 dark:bg-white/10' : ''}`} onClick={() => editor.chain().focus().toggleUnderline().run()}><UnderlineIcon size={18} /></button>
           <input type="color" className="w-6 h-6 p-0 border-0 rounded cursor-pointer bg-transparent" onChange={(e) => editor.chain().focus().setColor(e.target.value).run()} />
         </div>
 
-        <div className="flex items-center gap-1 pr-4 border-r border-border/50 dark:border-border-dark/50">
-          <button className="p-1.5 rounded" onClick={() => editor.chain().focus().setTextAlign('left').run()}><AlignLeft size={18} /></button>
-          <button className="p-1.5 rounded" onClick={() => editor.chain().focus().setTextAlign('center').run()}><AlignCenter size={18} /></button>
-          <button className="p-1.5 rounded" onClick={() => editor.chain().focus().setTextAlign('right').run()}><AlignRight size={18} /></button>
+        <div className="flex items-center gap-1 pr-4 border-r border-white/20 dark:border-white/8">
+          <button className={toolBtnClass} onClick={() => editor.chain().focus().setTextAlign('left').run()}><AlignLeft size={18} /></button>
+          <button className={toolBtnClass} onClick={() => editor.chain().focus().setTextAlign('center').run()}><AlignCenter size={18} /></button>
+          <button className={toolBtnClass} onClick={() => editor.chain().focus().setTextAlign('right').run()}><AlignRight size={18} /></button>
         </div>
 
         <div className="flex items-center gap-1">
-          <button className="p-1.5 rounded" onClick={() => editor.chain().focus().toggleBulletList().run()}><List size={18} /></button>
-          <button className="p-1.5 rounded" onClick={() => editor.chain().focus().toggleOrderedList().run()}><ListOrdered size={18} /></button>
-          <button className="p-1.5 rounded" onClick={() => { const url = prompt("Enter URL"); if (url) editor.chain().focus().setLink({ href: url }).run(); }}><LinkIcon size={18} /></button>
-          <button className="p-1.5 rounded" onClick={() => fileInputRef.current?.click()}><ImageIcon size={18} /></button>
+          <button className={toolBtnClass} onClick={() => editor.chain().focus().toggleBulletList().run()}><List size={18} /></button>
+          <button className={toolBtnClass} onClick={() => editor.chain().focus().toggleOrderedList().run()}><ListOrdered size={18} /></button>
+          <button className={toolBtnClass} onClick={() => { const url = prompt("Enter URL"); if (url) editor.chain().focus().setLink({ href: url }).run(); }}><LinkIcon size={18} /></button>
+          <button className={toolBtnClass} onClick={() => fileInputRef.current?.click()}><ImageIcon size={18} /></button>
         </div>
 
-        <button onClick={() => setAiOpen(true)} className="ml-auto flex items-center gap-2 px-4 py-1.5 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-sm font-medium shadow-sm hover:opacity-90 transition-all">
+        <button onClick={() => setAiOpen(true)} className="ml-auto flex items-center gap-2 px-4 py-1.5 rounded-xl bg-gradient-to-r from-accent to-accent-secondary text-white text-sm font-bold shadow-sm shadow-accent/20 hover:shadow-accent/30 transition-all">
           ✨ AI Assist
         </button>
       </div>
 
-      <div className="bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-b-2xl border-t-0 min-h-[500px] shadow-sm pb-10">
+      <div className="glass rounded-b-2xl border-t-0 min-h-[500px] shadow-sm pb-10">
         <EditorContent 
           editor={editor} 
           className="prose prose-zinc dark:prose-invert max-w-none p-8 outline-none prose-img:rounded-xl prose-img:shadow-md prose-img:mx-auto" 

@@ -17,14 +17,10 @@ function FolderCreateModal({ open, onClose, onCreate }) {
       {/* BACKDROP */}
       <div
         onClick={onClose}
-        className="
-          absolute inset-0
-          bg-black/70
-          backdrop-blur-xl
-        "
+        className="absolute inset-0 bg-black/50 backdrop-blur-xl"
       />
 
-      {/* MODAL */}
+      {/* MODAL — Glassmorphic */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -34,13 +30,12 @@ function FolderCreateModal({ open, onClose, onCreate }) {
           relative z-[100000]
           w-full max-w-sm
           rounded-2xl
-          bg-surface dark:bg-surface-dark
-          border border-border dark:border-border-dark
+          glass
           shadow-2xl
           p-6
         "
       >
-        <h2 className="text-lg font-semibold mb-4 text-text-primary dark:text-text-darkPrimary">
+        <h2 className="text-lg font-bold mb-4 text-text-primary dark:text-text-darkPrimary">
           Create Folder
         </h2>
 
@@ -50,21 +45,17 @@ function FolderCreateModal({ open, onClose, onCreate }) {
           placeholder="Folder name..."
           className="
             w-full h-11 px-4 rounded-xl
-            bg-muted dark:bg-muted-dark
-            border border-border dark:border-border-dark
+            glass-subtle
             text-sm text-text-primary dark:text-text-darkPrimary
-            outline-none focus:ring-2 focus:ring-indigo-400
+            placeholder:text-text-secondary/50
+            outline-none focus:shadow-glassHover transition-all
           "
         />
 
         <div className="flex justify-end gap-3 mt-5">
           <button
             onClick={onClose}
-            className="
-              px-4 py-2 rounded-xl text-sm
-              bg-muted dark:bg-muted-dark
-              hover:opacity-80
-            "
+            className="px-4 py-2 rounded-xl text-sm font-semibold glass-subtle text-text-primary dark:text-text-darkPrimary hover:shadow-glassHover transition-all"
           >
             Cancel
           </button>
@@ -75,11 +66,7 @@ function FolderCreateModal({ open, onClose, onCreate }) {
               onCreate(name.trim());
               onClose();
             }}
-            className="
-              px-4 py-2 rounded-xl text-sm
-              bg-indigo-600 text-white
-              hover:opacity-90
-            "
+            className="px-4 py-2 rounded-xl text-sm font-bold bg-gradient-to-r from-accent to-accent-secondary text-white shadow-lg shadow-accent/20 hover:shadow-accent/30 transition-all"
           >
             Create
           </button>

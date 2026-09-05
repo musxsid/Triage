@@ -7,10 +7,9 @@ import axios from "axios";
 const ProfileMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [user, setUser] = useState(null); // 🔥 State to hold real user data
+  const [user, setUser] = useState(null);
   const menuRef = useRef(null);
 
-  //  Fetch user data from backend
   const fetchUser = async () => {
     try {
       const res = await axios.get("http://localhost:8080/api/auth/me", {
@@ -47,7 +46,7 @@ const ProfileMenu = () => {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-10 h-10 rounded-full border-2 border-white/80 dark:border-white/80 hover:border-white transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-accent/50 bg-surface dark:bg-surface-dark"
+        className="w-10 h-10 rounded-full border-2 border-accent/30 hover:border-accent/60 transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-accent/30 glass overflow-hidden"
       >
         <img 
           src={`https://api.dicebear.com/7.x/notionists/svg?seed=${seedName}&backgroundColor=transparent`} 
@@ -63,9 +62,9 @@ const ProfileMenu = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 mt-3 w-56 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-2xl shadow-2xl p-2 z-50 origin-top-right"
+            className="absolute right-0 mt-3 w-56 glass rounded-2xl shadow-2xl p-2 z-50 origin-top-right"
           >
-            <div className="px-3 py-2 mb-1 border-b border-border/50 dark:border-border-dark/50">
+            <div className="px-3 py-2 mb-1 border-b border-white/15 dark:border-white/8">
               <p className="text-[13px] font-bold text-text-primary dark:text-text-darkPrimary truncate">{displayName}</p>
               <p className="text-[11px] text-text-secondary truncate">{displayEmail}</p>
             </div>
@@ -75,14 +74,14 @@ const ProfileMenu = () => {
                 setIsOpen(false);
                 setIsEditModalOpen(true);
               }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-muted dark:hover:bg-muted-dark text-text-primary dark:text-text-darkPrimary transition text-[13px] font-semibold mt-1"
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/30 dark:hover:bg-white/8 text-text-primary dark:text-text-darkPrimary transition text-[13px] font-semibold mt-1"
             >
               <Pencil size={15} className="text-text-secondary" /> Edit Profile
             </button>
-            <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-muted dark:hover:bg-muted-dark text-text-primary dark:text-text-darkPrimary transition text-[13px] font-semibold">
+            <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/30 dark:hover:bg-white/8 text-text-primary dark:text-text-darkPrimary transition text-[13px] font-semibold">
               <SlidersHorizontal size={15} className="text-text-secondary" /> Account Preferences
             </button>
-            <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-muted dark:hover:bg-muted-dark text-text-primary dark:text-text-darkPrimary transition text-[13px] font-semibold">
+            <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/30 dark:hover:bg-white/8 text-text-primary dark:text-text-darkPrimary transition text-[13px] font-semibold">
               <Shield size={15} className="text-text-secondary" /> Security
             </button>
           </motion.div>

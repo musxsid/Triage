@@ -38,7 +38,7 @@ function PublicNotePage() {
   if (error || !note) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center text-center px-4">
-        <div className="w-16 h-16 bg-surface dark:bg-surface-dark rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-border dark:border-border-dark">
+        <div className="w-16 h-16 glass rounded-2xl flex items-center justify-center mb-6">
           <FileText size={24} className="text-text-secondary opacity-50" />
         </div>
         <h1 className="text-2xl font-bold text-text-primary dark:text-text-darkPrimary mb-2">
@@ -49,7 +49,7 @@ function PublicNotePage() {
         </p>
         <Link 
           to="/" 
-          className="px-6 py-3 bg-accent dark:bg-accent-dark text-white dark:text-background-dark font-bold rounded-xl shadow-sm hover:opacity-90 transition"
+          className="px-6 py-3 bg-gradient-to-r from-accent to-accent-secondary text-white font-bold rounded-xl shadow-lg shadow-accent/20 hover:shadow-accent/30 transition-all"
         >
           Create your own notes
         </Link>
@@ -60,7 +60,7 @@ function PublicNotePage() {
   return (
     <div className="min-h-screen flex flex-col items-center py-12 px-6">
       
-      {/*  Brand Header */}
+      {/* Brand Header */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -79,19 +79,19 @@ function PublicNotePage() {
         </Link>
       </motion.div>
 
-      {/*  The Note Content */}
+      {/* The Note Content — Glassmorphic */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-3xl bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-3xl p-10 md:p-16 shadow-xl"
+        className="w-full max-w-3xl glass glass-shimmer rounded-3xl p-10 md:p-16 shadow-xl relative"
       >
-        <h1 className="text-4xl md:text-5xl font-extrabold text-text-primary dark:text-text-darkPrimary mb-8 tracking-tight">
+        <h1 className="text-4xl md:text-5xl font-extrabold text-text-primary dark:text-text-darkPrimary mb-8 tracking-tight relative z-10">
           {note.title || "Untitled"}
         </h1>
 
         <div 
           className="prose prose-zinc dark:prose-invert max-w-none 
-          prose-img:rounded-xl prose-img:shadow-md prose-img:mx-auto"
+          prose-img:rounded-xl prose-img:shadow-md prose-img:mx-auto relative z-10"
           dangerouslySetInnerHTML={{ __html: note.content }}
         />
       </motion.div>

@@ -35,13 +35,13 @@ function AIPanel({ open, onClose, onAction, result, onInsert }) {
       {/* BACKDROP */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
-      {/* PANEL */}
-      <div className="relative w-full max-w-md h-full bg-surface dark:bg-surface-dark border-l border-border dark:border-border-dark shadow-2xl p-6 flex flex-col">
+      {/* PANEL — Glassmorphic */}
+      <div className="relative w-full max-w-md h-full glass-strong border-l-0 shadow-2xl p-6 flex flex-col" style={{ borderLeft: '1px solid rgba(240, 221, 208, 0.3)' }}>
         
         {/* HEADER */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-indigo-500 rounded-lg text-white">
+            <div className="p-2 bg-gradient-to-br from-accent to-accent-secondary rounded-xl text-white shadow-lg shadow-accent/20">
               <Sparkles size={20} />
             </div>
             <div>
@@ -49,7 +49,7 @@ function AIPanel({ open, onClose, onAction, result, onInsert }) {
               <p className="text-xs text-text-secondary">Your intelligent workspace partner</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-muted dark:hover:bg-muted-dark rounded-full transition">
+          <button onClick={onClose} className="p-2 hover:bg-white/30 dark:hover:bg-white/8 rounded-full transition">
             <X size={20} />
           </button>
         </div>
@@ -61,7 +61,7 @@ function AIPanel({ open, onClose, onAction, result, onInsert }) {
               key={action.id}
               onClick={() => handleClick(action.id)}
               disabled={loading}
-              className="group text-left p-4 rounded-2xl bg-muted/50 dark:bg-muted-dark/50 hover:bg-indigo-500 hover:text-white transition-all duration-200 border border-transparent hover:border-indigo-400"
+              className="group text-left p-4 rounded-2xl glass-subtle hover:bg-gradient-to-br hover:from-accent hover:to-accent-secondary hover:text-white transition-all duration-200 hover:shadow-lg hover:shadow-accent/15"
             >
               <p className="font-bold text-sm mb-1">{action.label}</p>
               <p className="text-[10px] opacity-60 group-hover:opacity-90">{action.desc}</p>
@@ -74,22 +74,22 @@ function AIPanel({ open, onClose, onAction, result, onInsert }) {
           <div className="flex items-center justify-between mb-2 px-1">
             <span className="text-[10px] font-bold uppercase tracking-wider text-text-secondary">Response</span>
             {result && (
-              <button onClick={handleCopy} className="text-text-secondary hover:text-indigo-500 transition">
+              <button onClick={handleCopy} className="text-text-secondary hover:text-accent transition">
                 {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
               </button>
             )}
           </div>
           
-          <div className="flex-1 rounded-2xl bg-muted/30 dark:bg-muted-dark/30 border border-border dark:border-border-dark p-5 text-sm leading-relaxed overflow-y-auto whitespace-pre-wrap">
+          <div className="flex-1 rounded-2xl glass-subtle p-5 text-sm leading-relaxed overflow-y-auto whitespace-pre-wrap">
             {loading ? (
               <div className="flex flex-col items-center justify-center h-full gap-3 text-text-secondary">
-                <Sparkles size={24} className="animate-pulse text-indigo-500" />
+                <Sparkles size={24} className="animate-pulse text-accent" />
                 <p className="animate-pulse font-medium">Spark is thinking...</p>
               </div>
             ) : result ? (
 <div 
         className="prose prose-sm dark:prose-invert max-w-none 
-                   prose-h3:text-indigo-500 prose-h3:mt-0 prose-h3:mb-2
+                   prose-h3:text-accent prose-h3:mt-0 prose-h3:mb-2
                    prose-p:text-text-primary dark:prose-p:text-text-darkPrimary prose-p:my-2
                    prose-li:my-1"
         dangerouslySetInnerHTML={{ __html: result }} 
@@ -105,7 +105,7 @@ function AIPanel({ open, onClose, onAction, result, onInsert }) {
             <div className="mt-4 flex gap-3">
               <button
                 onClick={onInsert}
-                className="flex-1 py-4 rounded-2xl bg-indigo-600 text-white font-bold text-sm shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition"
+                className="flex-1 py-4 rounded-2xl bg-gradient-to-r from-accent to-accent-secondary text-white font-bold text-sm shadow-lg shadow-accent/20 hover:shadow-accent/30 transition-all"
               >
                 Insert into Note
               </button>

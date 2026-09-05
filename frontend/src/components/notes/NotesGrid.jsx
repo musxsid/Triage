@@ -1,21 +1,21 @@
 import { motion } from "framer-motion";
-import NoteCard from "./NoteCard";
+import NoteRow from "./NoteRow";
 
 const container = {
   hidden: {},
   show: {
     transition: {
-      staggerChildren: 0.05,
+      staggerChildren: 0.06,
     },
   },
 };
 
 const item = {
-  hidden: { opacity: 0, y: 14 },
+  hidden: { opacity: 0, y: 12 },
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.25, ease: [0.16, 1, 0.3, 1] },
+    transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] },
   },
 };
 
@@ -28,8 +28,7 @@ const NotesGrid = ({ notes, onDelete, onEdit, searchTerm }) => {
           className="
             mb-4 flex items-center justify-center
             w-16 h-16 rounded-2xl
-            bg-surface dark:bg-surface-dark
-            border border-border dark:border-border-dark
+            glass
             text-xl
           "
         >
@@ -54,20 +53,14 @@ const NotesGrid = ({ notes, onDelete, onEdit, searchTerm }) => {
       variants={container}
       initial="hidden"
       animate="show"
-      className="
-        grid gap-6
-        sm:grid-cols-2
-        lg:grid-cols-3
-        xl:grid-cols-4
-      "
+      className="flex flex-col gap-3"
     >
-      {notes.map((note, index) => (
+      {notes.map((note) => (
         <motion.div key={note.id} variants={item}>
-          <NoteCard
+          <NoteRow
             note={note}
             onDelete={onDelete}
             onEdit={onEdit}
-            index={index}
           />
         </motion.div>
       ))}

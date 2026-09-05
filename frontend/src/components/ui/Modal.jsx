@@ -5,7 +5,7 @@ const Modal = ({ isOpen, onClose, children }) => {
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 bg-black/40 flex justify-center items-center z-50"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -15,11 +15,11 @@ const Modal = ({ isOpen, onClose, children }) => {
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.9, y: 10, opacity: 0 }}
             transition={{ type: "spring", stiffness: 140, damping: 14 }}
-            className="bg-white dark:bg-gray-800 rounded-xl p-6 w-[400px] shadow-lg relative"
+            className="glass rounded-2xl p-6 w-[400px] shadow-2xl relative"
           >
             <button
               onClick={onClose}
-              className="absolute top-2 right-3 text-gray-500 hover:text-black dark:hover:text-white"
+              className="absolute top-3 right-4 text-text-secondary hover:text-text-primary dark:hover:text-text-darkPrimary transition-colors"
             >
               ✕
             </button>

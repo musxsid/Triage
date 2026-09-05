@@ -3,7 +3,7 @@ import {
   FileText, Star, Sparkles, Settings, LogOut,
   Moon, Sun, Plus, ChevronDown, Check,
   Briefcase, Folder, LayoutGrid, Trash2,
-  Calendar, Mail
+  Search
 } from "lucide-react";
 import FolderCreateModal from "../ui/FolderCreateModal";
 import CreateWorkspaceModal from "../ui/CreateWorkspaceModal";
@@ -19,7 +19,7 @@ const Sidebar = () => {
   const dropdownRef = useRef(null);
   
   const [folderToDelete, setFolderToDelete] = useState(null);
-  const ICON_SIZE = 20;
+  const ICON_SIZE = 18;
 
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("theme") === "dark");
   const [workspaces, setWorkspaces] = useState([]);
@@ -33,7 +33,7 @@ const Sidebar = () => {
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   const [showCreateWorkspaceModal, setShowCreateWorkspaceModal] = useState(false);
   
-  const [isFoldersOpen, setIsFoldersOpen] = useState(true);
+  const [isBoardsOpen, setIsBoardsOpen] = useState(true);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -155,46 +155,50 @@ const Sidebar = () => {
     navigate("/");
   };
 
-  const navItemClass = ({ isActive }) =>
-    `flex items-center gap-3 px-3 py-3 rounded-xl text-[15px] font-semibold transition-all ${
-      isActive
-        ? "bg-muted dark:bg-muted-dark text-text-primary dark:text-text-darkPrimary shadow-sm"
-        : "text-text-secondary hover:bg-muted/50 dark:hover:bg-muted-dark/50 hover:text-text-primary dark:hover:text-text-darkPrimary"
-    }`;
+  const navItemBase = "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium transition-all duration-200";
+  const navItemActive = "bg-white/50 dark:bg-white/8 text-text-primary dark:text-text-darkPrimary shadow-sm backdrop-blur-sm border border-white/30 dark:border-white/10";
+  const navItemInactive = "text-text-secondary hover:bg-white/30 dark:hover:bg-white/5 hover:text-text-primary dark:hover:text-text-darkPrimary";
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col justify-between bg-surface dark:bg-surface-dark border-r border-border dark:border-border-dark z-50">
+    <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col justify-between glass-strong z-50 border-r-0" style={{ borderRight: '1px solid rgba(240, 221, 208, 0.4)' }}>
       
-      <div className="px-5 pt-8 pb-2">
-        <div className="flex items-center gap-3 px-2 mb-8">
-          <div className="w-9 h-9 rounded-xl bg-accent dark:bg-accent-dark flex items-center justify-center shadow-lg shadow-accent/10">
-            <FileText size={ICON_SIZE} className="text-white dark:text-background-dark" />
+      {/* ═══ TOP: BRAND ═══ */}
+      <div className="px-5 pt-7 pb-2">
+        <div className="flex items-center gap-3 px-2 mb-7">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-accent to-accent-secondary flex items-center justify-center shadow-lg shadow-accent/20">
+            <FileText size={16} className="text-white" />
           </div>
-          <span className="text-xl font-bold tracking-tight text-text-primary dark:text-text-darkPrimary">
-            SimplyNotes
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-bold tracking-tight text-text-primary dark:text-text-darkPrimary">
+              SimplyNotes
+            </span>
+            <span className="text-[10px] font-bold text-accent bg-accent/10 px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+              Beta
+            </span>
+          </div>
         </div>
 
-        <div className="relative mb-6" ref={dropdownRef}>
+        {/* ═══ WORKSPACE SWITCHER ═══ */}
+        <div className="relative mb-5" ref={dropdownRef}>
           <button
             onClick={() => setIsWorkspaceDropdownOpen(!isWorkspaceDropdownOpen)}
-            className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-muted dark:hover:bg-muted-dark transition group border border-transparent hover:border-border dark:hover:border-border-dark"
+            className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-white/40 dark:hover:bg-white/5 transition group border border-transparent hover:border-white/30 dark:hover:border-white/10"
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 flex-shrink-0 rounded-lg bg-text-primary/5 dark:bg-text-darkPrimary/10 text-text-primary dark:text-text-darkPrimary flex items-center justify-center text-lg font-bold overflow-hidden">
+              <div className="w-9 h-9 flex-shrink-0 rounded-lg bg-accent/10 dark:bg-accent-dark/15 text-accent dark:text-accent-dark flex items-center justify-center text-base font-bold overflow-hidden">
                 {activeWorkspace?.icon?.length > 2 
                   ? activeWorkspace.icon.charAt(0).toUpperCase() 
                   : (activeWorkspace?.icon || <Briefcase size={ICON_SIZE} />)}
               </div>
               <div className="flex flex-col items-start">
-                <span className="text-[14px] font-bold text-text-primary dark:text-text-darkPrimary truncate w-28 text-left">
+                <span className="text-[13px] font-bold text-text-primary dark:text-text-darkPrimary truncate w-28 text-left">
                   {activeWorkspace?.name || "Loading..."}
                 </span>
-                <span className="text-[11px] font-medium text-text-secondary uppercase tracking-wider">Workspace</span>
+                <span className="text-[10px] font-medium text-text-secondary uppercase tracking-wider">Workspace</span>
               </div>
             </div>
             <ChevronDown 
-              size={18} 
+              size={16} 
               className={`text-text-secondary transition-transform duration-300 ${isWorkspaceDropdownOpen ? "rotate-180" : ""}`} 
             />
           </button>
@@ -205,7 +209,7 @@ const Sidebar = () => {
                 initial={{ opacity: 0, y: -10, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                className="absolute top-full left-0 w-full mt-2 p-2 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-2xl shadow-2xl z-50 overflow-hidden"
+                className="absolute top-full left-0 w-full mt-2 p-2 glass rounded-2xl shadow-2xl z-50 overflow-hidden"
               >
                 <div className="max-h-48 overflow-y-auto custom-scrollbar space-y-1">
                   {workspaces.map((ws) => (
@@ -218,31 +222,31 @@ const Sidebar = () => {
                         setIsWorkspaceDropdownOpen(false);
                         navigate("/dashboard");
                       }}
-                      className="w-full flex items-center justify-between px-3 py-3 text-sm font-medium rounded-xl hover:bg-muted dark:hover:bg-muted-dark transition"
+                      className="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl hover:bg-white/40 dark:hover:bg-white/8 transition"
                     >
                       <div className="flex items-center gap-2">
                         <span>{ws.icon || "💼"}</span>
                         <span>{ws.name}</span>
                       </div>
-                      {activeWorkspace?.id === ws.id && <Check size={16} className="text-text-primary dark:text-text-darkPrimary" />}
+                      {activeWorkspace?.id === ws.id && <Check size={16} className="text-accent dark:text-accent-dark" />}
                     </button>
                   ))}
                 </div>
                 
-                <div className="h-px bg-border dark:bg-border-dark my-2"></div>
+                <div className="h-px bg-border/50 dark:bg-border-dark/50 my-2"></div>
                 
                 <button 
                   onClick={() => { setIsWorkspaceDropdownOpen(false); navigate("/workspaces"); }}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-semibold text-text-secondary hover:text-text-primary rounded-xl transition"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm font-semibold text-text-secondary hover:text-text-primary rounded-xl transition"
                 >
-                  <LayoutGrid size={18} /> View All Workspaces
+                  <LayoutGrid size={16} /> View All Workspaces
                 </button>
 
                 <button 
                   onClick={() => { setIsWorkspaceDropdownOpen(false); setShowCreateWorkspaceModal(true); }}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-semibold text-text-secondary hover:text-text-primary rounded-xl transition"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm font-semibold text-text-secondary hover:text-text-primary rounded-xl transition"
                 >
-                  <Plus size={18} /> Create Workspace
+                  <Plus size={16} /> Create Workspace
                 </button>
               </motion.div>
             )}
@@ -250,35 +254,45 @@ const Sidebar = () => {
         </div>
       </div>
 
+      {/* ═══ MAIN NAV ═══ */}
       <div className="flex-1 overflow-y-auto px-5 custom-scrollbar pb-4">
         
-        <div className="mb-8">
-          <p className="text-[11px] font-bold text-text-secondary/60 mb-3 uppercase tracking-[0.15em] ml-2">Main</p>
-          <div className="space-y-1.5">
+        <div className="mb-6">
+          <div className="space-y-1">
+            {/* Home / Notes */}
             <div
               onClick={() => { setActiveFolder(null); navigate("/dashboard"); }}
-              className={`flex items-center gap-3 px-3 py-3 rounded-xl text-[15px] font-semibold cursor-pointer transition-all ${
+              className={`${navItemBase} cursor-pointer ${
                 location.pathname === "/dashboard" && !isFavoritesActive && activeFolder === null
-                  ? "bg-muted dark:bg-muted-dark text-text-primary dark:text-text-darkPrimary shadow-sm"
-                  : "text-text-secondary hover:bg-muted/50 dark:hover:bg-muted-dark/50 hover:text-text-primary dark:hover:text-text-darkPrimary"
+                  ? navItemActive
+                  : navItemInactive
               }`}
             >
-              <FileText size={ICON_SIZE} /> Notes
+              <FileText size={ICON_SIZE} /> Home
             </div>
             
-            <NavLink to="/calendar" className={navItemClass}>
-              <Calendar size={ICON_SIZE} /> Calendar
-            </NavLink>
-            <NavLink to="/mails" className={navItemClass}>
-              <Mail size={ICON_SIZE} /> Mails
-            </NavLink>
+            {/* Search */}
+            <div
+              onClick={() => {
+                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
+              }}
+              className={`${navItemBase} cursor-pointer ${navItemInactive} justify-between`}
+            >
+              <div className="flex items-center gap-3">
+                <Search size={ICON_SIZE} /> Search
+              </div>
+              <span className="text-[10px] font-bold text-text-secondary/60 bg-white/40 dark:bg-white/8 px-1.5 py-0.5 rounded border border-white/30 dark:border-white/10">
+                Ctrl K
+              </span>
+            </div>
 
+            {/* Favorites */}
             <div
               onClick={() => { setActiveFolder(null); navigate("/dashboard?favorites=true"); }}
-              className={`flex items-center gap-3 px-3 py-3 rounded-xl text-[15px] font-semibold cursor-pointer transition-all ${
+              className={`${navItemBase} cursor-pointer ${
                 isFavoritesActive
-                  ? "bg-muted dark:bg-muted-dark text-text-primary dark:text-text-darkPrimary shadow-sm"
-                  : "text-text-secondary hover:bg-muted/50 dark:hover:bg-muted-dark/50 hover:text-text-primary dark:hover:text-text-darkPrimary"
+                  ? navItemActive
+                  : navItemInactive
               }`}
             >
               <Star size={ICON_SIZE} className={isFavoritesActive ? "text-yellow-500 fill-yellow-500" : ""} /> Favorites
@@ -286,69 +300,59 @@ const Sidebar = () => {
           </div>
         </div>
 
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-3 ml-2 group">
+        {/* ═══ BOARDS (FOLDERS) ═══ */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2 ml-1 group">
             <div 
-              onClick={() => setIsFoldersOpen(!isFoldersOpen)}
-              className="flex items-center gap-1 cursor-pointer select-none"
+              onClick={() => setIsBoardsOpen(!isBoardsOpen)}
+              className="flex items-center gap-1.5 cursor-pointer select-none"
             >
               <ChevronDown 
-                size={14} 
-                className={`text-text-secondary transition-transform duration-200 ${!isFoldersOpen ? "-rotate-90" : ""}`} 
+                size={12} 
+                className={`text-text-secondary/60 transition-transform duration-200 ${!isBoardsOpen ? "-rotate-90" : ""}`} 
               />
-              <p className="text-[11px] font-bold text-text-secondary/60 uppercase tracking-[0.15em] hover:text-text-primary transition-colors">
-                Folders
+              <p className="text-[11px] font-bold text-text-secondary/60 uppercase tracking-[0.12em] hover:text-text-primary transition-colors">
+                Boards
               </p>
             </div>
             <button 
               onClick={() => setShowCreateFolderModal(true)} 
-              className="p-1.5 rounded-lg hover:bg-muted dark:hover:bg-muted-dark transition text-text-secondary hover:text-text-primary"
+              className="p-1 rounded-lg hover:bg-white/40 dark:hover:bg-white/8 transition text-text-secondary hover:text-text-primary"
             >
-              <Plus size={16} />
+              <Plus size={14} />
             </button>
           </div>
 
           <AnimatePresence>
-            {isFoldersOpen && (
+            {isBoardsOpen && (
               <motion.div 
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden"
               >
-                <div className="space-y-1.5">
-                  <div
-                    onClick={() => { setActiveFolder(null); navigate("/dashboard"); }}
-                    className={`px-3 py-3 rounded-xl text-[15px] font-semibold cursor-pointer transition ${
-                      activeFolder === null && !isFavoritesActive 
-                      ? "bg-muted dark:bg-muted-dark text-text-primary dark:text-text-darkPrimary shadow-sm" 
-                      : "text-text-secondary hover:bg-muted/50 dark:hover:bg-muted-dark/50 hover:text-text-primary dark:hover:text-text-darkPrimary"
-                    }`}
-                  >
-                    All Notes
-                  </div>
-
+                <div className="space-y-0.5 ml-1">
                   {folders.map((f) => (
                     <div
                       key={f.id}
                       onClick={() => { setActiveFolder(f.id); navigate(`/dashboard?folder=${f.id}`); }}
-                      className={`group flex items-center justify-between px-3 py-3 rounded-xl text-[15px] font-semibold cursor-pointer transition ${
+                      className={`group flex items-center justify-between px-3 py-2 rounded-xl text-[13px] font-medium cursor-pointer transition ${
                         activeFolder === f.id && !isFavoritesActive 
-                        ? "bg-muted dark:bg-muted-dark text-text-primary dark:text-text-darkPrimary shadow-sm" 
-                        : "text-text-secondary hover:bg-muted/50 dark:hover:bg-muted-dark/50 hover:text-text-primary dark:hover:text-text-darkPrimary"
+                        ? navItemActive
+                        : navItemInactive
                       }`}
                     >
-                      <div className="flex items-center gap-3 truncate">
-                        <Folder size={ICON_SIZE} className="opacity-70 flex-shrink-0" />
+                      <div className="flex items-center gap-2.5 truncate">
+                        <Folder size={15} className="opacity-60 flex-shrink-0" />
                         <span className="truncate">{f.name}</span>
                       </div>
                       
                       <button
                         onClick={(e) => promptDeleteFolder(e, f.id, f.name)}
-                        className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-500 transition-all flex-shrink-0"
+                        className="opacity-0 group-hover:opacity-100 p-0.5 hover:text-red-500 transition-all flex-shrink-0"
                         title="Delete folder"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   ))}
@@ -359,34 +363,40 @@ const Sidebar = () => {
         </div>
       </div>
 
-      <div className="px-5 pb-8 pt-4 border-t border-border dark:border-border-dark bg-surface dark:bg-surface-dark">
+      {/* ═══ BOTTOM SECTION ═══ */}
+      <div className="px-5 pb-6 pt-3 border-t border-white/20 dark:border-white/8">
         
-        {/* AI Assistant Card */}
+        {/* AI Assistant Card — Glassmorphic */}
         <NavLink 
           to="/ai" 
           className={({ isActive }) => `
-            flex items-center gap-3 px-4 py-3.5 rounded-2xl mb-4 transition-all duration-300 group
-            ${isActive ? 'bg-indigo-500 text-white' : 'bg-indigo-500/5 hover:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'}
+            flex items-center gap-3 px-3.5 py-3 rounded-2xl mb-3 transition-all duration-300 group glass-shimmer
+            ${isActive 
+              ? 'bg-gradient-to-r from-accent to-accent-secondary text-white shadow-lg shadow-accent/20' 
+              : 'bg-accent/8 hover:bg-accent/15 text-accent dark:text-accent-dark border border-accent/15'
+            }
           `}
         >
-          <Sparkles size={20} className="group-hover:rotate-12 transition-transform" />
-          <div className="flex flex-col">
-            <span className="text-[14px] font-bold">AI Assistant</span>
-            <span className="text-[11px] opacity-70">Generate & fix notes</span>
+          <Sparkles size={18} className="group-hover:rotate-12 transition-transform relative z-10" />
+          <div className="flex flex-col relative z-10">
+            <span className="text-[13px] font-bold">AI Assistant</span>
+            <span className="text-[10px] opacity-70">Generate & fix notes</span>
           </div>
         </NavLink>
 
-        <div className="space-y-1.5">
-          <NavLink to="/settings" className={navItemClass}>
+        <div className="space-y-0.5">
+          <NavLink to="/settings" className={({ isActive }) =>
+            `${navItemBase} ${isActive ? navItemActive : navItemInactive}`
+          }>
             <Settings size={ICON_SIZE} /> Settings
           </NavLink>
           
-          <button onClick={() => setDarkMode(!darkMode)} className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-[15px] font-semibold text-text-secondary hover:bg-muted dark:hover:bg-muted-dark hover:text-text-primary dark:hover:text-text-darkPrimary transition">
+          <button onClick={() => setDarkMode(!darkMode)} className={`w-full ${navItemBase} ${navItemInactive}`}>
             {darkMode ? <Sun size={ICON_SIZE} /> : <Moon size={ICON_SIZE} />}
             {darkMode ? "Light Mode" : "Dark Mode"}
           </button>
 
-          <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-[15px] font-semibold text-red-500 hover:bg-red-500/10 transition">
+          <button onClick={handleLogout} className={`w-full ${navItemBase} text-red-500 hover:bg-red-500/10 hover:text-red-600`}>
             <LogOut size={ICON_SIZE} /> Logout
           </button>
         </div>
@@ -410,7 +420,7 @@ const Sidebar = () => {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-surface dark:bg-surface-dark border border-border dark:border-border-dark p-6 rounded-3xl shadow-2xl w-full max-w-sm text-center"
+              className="glass p-6 rounded-3xl shadow-2xl w-full max-w-sm text-center"
             >
               <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
                 <Trash2 size={24} />
@@ -418,19 +428,19 @@ const Sidebar = () => {
               <h3 className="text-xl font-bold text-text-primary dark:text-text-darkPrimary mb-2 tracking-tight">
                 Delete Folder?
               </h3>
-              <p className="text-[15px] text-text-secondary mb-8 leading-relaxed">
+              <p className="text-[14px] text-text-secondary mb-8 leading-relaxed">
                 Are you sure you want to delete the <strong className="text-text-primary dark:text-text-darkPrimary">"{folderToDelete.name}"</strong> folder? Any notes inside will become ungrouped.
               </p>
               <div className="flex gap-3 justify-center">
                 <button
                   onClick={() => setFolderToDelete(null)}
-                  className="flex-1 py-3 rounded-xl font-bold text-[14px] bg-muted dark:bg-muted-dark text-text-primary dark:text-text-darkPrimary hover:opacity-80 transition"
+                  className="flex-1 py-3 rounded-xl font-bold text-[13px] glass text-text-primary dark:text-text-darkPrimary hover:opacity-80 transition"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={executeDeleteFolder}
-                  className="flex-1 py-3 rounded-xl font-bold text-[14px] bg-red-500 text-white hover:bg-red-600 transition shadow-lg shadow-red-500/20 active:scale-95"
+                  className="flex-1 py-3 rounded-xl font-bold text-[13px] bg-red-500 text-white hover:bg-red-600 transition shadow-lg shadow-red-500/20 active:scale-95"
                 >
                   Delete Folder
                 </button>

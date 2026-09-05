@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
-import { Search, FileText, Plus, Star } from "lucide-react";
+import { Search, FileText, Plus, Star, ChevronDown } from "lucide-react";
 
 import { getNotes, deleteNote } from "../services/notesService";
 import { getFolders } from "../services/folderService";
@@ -112,70 +112,81 @@ function DashboardPage() {
   if (loading) {
     return (
       <div className="w-full h-[60vh] flex flex-col items-center justify-center">
-        <div className="w-6 h-6 border-2 border-text-secondary border-t-transparent rounded-full animate-spin mb-4"></div>
+        <div className="w-6 h-6 border-2 border-accent/40 border-t-accent rounded-full animate-spin mb-4"></div>
         <p className="text-sm font-medium text-text-secondary">Syncing workspace...</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-8 py-10">
+    <div className="w-full max-w-5xl mx-auto px-6 py-8">
 
-     
-      <div className="fixed top-8 right-8 z-[100] hidden md:block">
+      {/* Profile Menu — Top Right */}
+      <div className="fixed top-6 right-8 z-[100] hidden md:block">
         <ProfileMenu />
       </div>
 
-      <div className="mb-10 flex flex-col md:flex-row md:items-end md:justify-between gap-6 mt-2">
+      {/* ═══ HEADER: Title + Activity + New Snippet ═══ */}
+      <div className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-5 mt-1">
         <div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-text-primary dark:text-text-darkPrimary flex items-center gap-3">
-            {isFavoritesActive && <Star size={32} className="text-yellow-500 fill-yellow-500" />}
-            {isFavoritesActive ? "Your Favorites" : "Your Notes"}
+          <h1 className="text-3xl font-extrabold tracking-tight text-text-primary dark:text-text-darkPrimary flex items-center gap-3">
+            {isFavoritesActive && <Star size={28} className="text-yellow-500 fill-yellow-500" />}
+            {isFavoritesActive ? "Your Favorites" : "Home"}
           </h1>
-          <p className="text-[15px] text-text-secondary mt-2">
+          <p className="text-[14px] text-text-secondary mt-1.5">
             {isFavoritesActive 
               ? "Your starred and most important ideas." 
               : "Capture ideas, stay organized, and focus on what matters."}
           </p>
         </div>
 
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => navigate("/notes/new")}
-          className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-accent dark:bg-accent-dark text-white dark:text-background-dark text-[15px] font-semibold shadow-card hover:shadow-cardHover transition-all duration-200"
-        >
-          <Plus size={18} /> New Note
-        </motion.button>
+        <div className="flex items-center gap-3">
+          {/* Activity Filter */}
+          <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold glass text-text-primary dark:text-text-darkPrimary hover:shadow-glassHover transition-all">
+            Activity <ChevronDown size={14} className="text-text-secondary" />
+          </button>
+
+          {/* New Snippet Button */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate("/notes/new")}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-accent to-accent-secondary text-white text-[13px] font-bold shadow-lg shadow-accent/20 hover:shadow-accent/30 transition-all duration-200"
+          >
+            <Plus size={16} /> New Snippet
+          </motion.button>
+        </div>
       </div>
 
+      {/* ═══ SEARCH BAR ═══ */}
       {notes.length > 0 && (
-        <div className="relative mb-12 max-w-xl">
-          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary opacity-70" />
+        <div className="relative mb-8 max-w-xl">
+          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary opacity-60" />
           <input
             type="text"
             placeholder="Search your thoughts..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full h-12 pl-12 pr-4 rounded-2xl bg-surface dark:bg-surface-dark border border-border dark:border-border-dark text-[15px] text-text-primary dark:text-text-darkPrimary placeholder:text-text-secondary outline-none focus:border-text-secondary dark:focus:border-text-secondary transition-colors shadow-sm"
+            className="w-full h-11 pl-11 pr-4 rounded-xl glass text-[14px] text-text-primary dark:text-text-darkPrimary placeholder:text-text-secondary/50 outline-none focus:shadow-glassHover transition-shadow"
           />
         </div>
       )}
 
+      {/* ═══ CONTENT: Feed Layout ═══ */}
       {!loading && notes.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-[50vh] text-center max-w-md mx-auto">
-          <div className="w-20 h-20 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-3xl flex items-center justify-center mb-6 shadow-sm">
+          <div className="w-20 h-20 glass rounded-3xl flex items-center justify-center mb-6">
             <FileText size={32} className="text-text-secondary opacity-40" />
           </div>
           <h3 className="text-xl font-bold text-text-primary dark:text-text-darkPrimary tracking-tight">
             It's quiet in here
           </h3>
-          <p className="text-[15px] text-text-secondary mt-2 leading-relaxed">
+          <p className="text-[14px] text-text-secondary mt-2 leading-relaxed">
             This workspace doesn't have any notes yet. Start capturing your ideas or create a new project.
           </p>
           <button 
             onClick={() => navigate("/notes/new")}
-            className="mt-8 px-6 py-3 bg-muted dark:bg-muted-dark hover:bg-border dark:hover:bg-border-dark text-text-primary dark:text-text-darkPrimary rounded-xl text-[14px] font-bold transition-colors"
+            className="mt-8 px-6 py-3 bg-gradient-to-r from-accent to-accent-secondary text-white rounded-xl text-[13px] font-bold transition-colors shadow-lg shadow-accent/20"
           >
             Create your first note
           </button>
@@ -186,17 +197,17 @@ function DashboardPage() {
              {isFavoritesActive ? (
                 <>
                   <Star size={48} className="text-text-secondary opacity-20 mb-4" />
-                  <p className="text-text-primary font-medium text-[16px]">No favorites yet</p>
-                  <p className="text-text-secondary text-[14px] mt-1">Star a note to see it here.</p>
+                  <p className="text-text-primary font-medium text-[15px]">No favorites yet</p>
+                  <p className="text-text-secondary text-[13px] mt-1">Star a note to see it here.</p>
                 </>
              ) : (
-                <p className="text-text-secondary text-[15px]">No notes match your search.</p>
+                <p className="text-text-secondary text-[14px]">No notes match your search.</p>
              )}
           </div>
         ) : (
           Object.entries(groupedNotes).map(([folderName, notesGroup]) => (
-            <div key={folderName} className="mb-12">
-              <h2 className="text-xs font-bold mb-4 text-text-secondary uppercase tracking-[0.15em] ml-1">
+            <div key={folderName} className="mb-10">
+              <h2 className="text-[11px] font-bold mb-3 text-text-secondary/70 uppercase tracking-[0.14em] ml-1">
                 {folderName}
               </h2>
               <NotesGrid
@@ -207,6 +218,18 @@ function DashboardPage() {
           ))
         )
       )}
+
+      {/* ═══ FLOATING NEW SNIPPET BUTTON (Mobile / Always visible) ═══ */}
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => navigate("/notes/new")}
+        className="fixed bottom-8 left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:right-8 flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-accent to-accent-secondary text-white text-[14px] font-bold shadow-xl shadow-accent/25 z-50 glass-shimmer"
+      >
+        <span className="relative z-10 flex items-center gap-2">
+          <Plus size={18} /> New Snippet
+        </span>
+      </motion.button>
     </div>
   );
 }

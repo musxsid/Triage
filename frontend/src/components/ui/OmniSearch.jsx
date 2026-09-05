@@ -86,18 +86,18 @@ const OmniSearch = () => {
             onClick={() => setIsOpen(false)}
             className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-start justify-center pt-[15vh] px-4"
           >
-            {/* MODAL */}
+            {/* MODAL — Glassmorphic */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: -20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -10 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
-              onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
-              className="w-full max-w-2xl bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-2xl glass rounded-2xl shadow-2xl overflow-hidden flex flex-col"
             >
               
               {/* SEARCH INPUT AREA */}
-              <div className="flex items-center gap-3 px-4 py-4 border-b border-border dark:border-border-dark">
+              <div className="flex items-center gap-3 px-4 py-4 border-b border-white/15 dark:border-white/8">
                 <Search size={20} className="text-text-secondary" />
                 <input
                   ref={inputRef}
@@ -105,11 +105,11 @@ const OmniSearch = () => {
                   placeholder="Search notes, folders, or commands..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  className="flex-1 bg-transparent border-none outline-none text-[16px] text-text-primary dark:text-text-darkPrimary placeholder:text-text-secondary/60"
+                  className="flex-1 bg-transparent border-none outline-none text-[16px] text-text-primary dark:text-text-darkPrimary placeholder:text-text-secondary/50"
                 />
                 <button 
                   onClick={() => setIsOpen(false)}
-                  className="p-1 rounded-md bg-muted dark:bg-muted-dark text-text-secondary text-xs font-bold border border-border dark:border-border-dark"
+                  className="p-1 rounded-md bg-white/30 dark:bg-white/8 text-text-secondary text-xs font-bold border border-white/20 dark:border-white/10"
                 >
                   ESC
                 </button>
@@ -134,9 +134,9 @@ const OmniSearch = () => {
                       <button
                         key={`folder-${folder.id}`}
                         onClick={() => handleSelectFolder(folder.id)}
-                        className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-muted dark:hover:bg-muted-dark transition-colors text-left"
+                        className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/30 dark:hover:bg-white/8 transition-colors text-left"
                       >
-                        <Folder size={18} className="text-indigo-500" />
+                        <Folder size={18} className="text-accent dark:text-accent-dark" />
                         <span className="text-sm font-medium text-text-primary dark:text-text-darkPrimary">{folder.name}</span>
                       </button>
                     ))}
@@ -153,7 +153,7 @@ const OmniSearch = () => {
                       <button
                         key={`note-${note.id}`}
                         onClick={() => handleSelectNote(note.id)}
-                        className="w-full flex flex-col gap-1 px-3 py-3 rounded-xl hover:bg-muted dark:hover:bg-muted-dark transition-colors text-left"
+                        className="w-full flex flex-col gap-1 px-3 py-3 rounded-xl hover:bg-white/30 dark:hover:bg-white/8 transition-colors text-left"
                       >
                         <div className="flex items-center gap-3">
                           <FileText size={18} className="text-text-secondary" />

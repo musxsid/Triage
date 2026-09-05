@@ -69,15 +69,15 @@ function CreateWorkspaceModal({ open, onClose, onCreated }) {
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="relative w-full max-w-md bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-2xl shadow-2xl overflow-hidden"
+            className="relative w-full max-w-md glass rounded-2xl shadow-2xl overflow-hidden"
           >
             <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
 
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-border-dark">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/15 dark:border-white/8">
               <h3 className="text-lg font-bold text-text-primary dark:text-text-darkPrimary">
                 Create Workspace
               </h3>
-              <button onClick={onClose} className="p-2 rounded-xl hover:bg-muted dark:hover:bg-muted-dark text-text-secondary transition-colors">
+              <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/30 dark:hover:bg-white/8 text-text-secondary transition-colors">
                 <X size={20} />
               </button>
             </div>
@@ -113,13 +113,13 @@ function CreateWorkspaceModal({ open, onClose, onCreated }) {
 
               <div>
                 <label className="block text-xs font-bold text-text-secondary uppercase tracking-wider mb-2">Name</label>
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Work, Personal, Side Project..." className="w-full px-4 py-3 rounded-xl bg-transparent border border-border dark:border-border-dark text-text-primary dark:text-text-darkPrimary outline-none focus:border-indigo-500 transition-colors" />
+                <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Work, Personal, Side Project..." className="w-full px-4 py-3 rounded-xl glass-subtle text-text-primary dark:text-text-darkPrimary outline-none focus:shadow-glassHover transition-all" />
               </div>
 
               <div className="flex justify-end gap-3 mt-4">
                 <button type="button" onClick={onClose} className="px-5 py-2.5 rounded-xl text-sm font-semibold text-text-secondary hover:bg-muted dark:hover:bg-muted-dark">Cancel</button>
                 {/* 🔥 FIXED BUTTON STYLING HERE */}
-                <button type="submit" disabled={isLoading || !name.trim()} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-black dark:bg-white text-white dark:text-black disabled:opacity-50 transition-opacity hover:opacity-90">
+                <button type="submit" disabled={isLoading || !name.trim()} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-accent to-accent-secondary text-white disabled:opacity-50 transition-all shadow-lg shadow-accent/20 hover:shadow-accent/30">
                   {isLoading ? "Creating..." : <><Plus size={16} /> Create</>}
                 </button>
               </div>

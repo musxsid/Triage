@@ -9,7 +9,6 @@ import CreateWorkspaceModal from "../components/ui/CreateWorkspaceModal";
 import EditWorkspaceModal from "../components/ui/EditWorkspaceModal"; 
 import ConfirmModal from "../components/ui/ConfirmModal"; 
 
-// 🔥 IMPORT ADDED HERE
 import ProfileMenu from "../components/ui/ProfileMenu";
 
 function WorkspacesHubPage() {
@@ -90,7 +89,7 @@ function WorkspacesHubPage() {
   return (
     <div className="max-w-5xl mx-auto py-10 px-4 relative">
       
-      <div className="fixed top-8 right-8 z-[100] hidden md:block">
+      <div className="fixed top-6 right-8 z-[100] hidden md:block">
         <ProfileMenu />
       </div>
 
@@ -99,13 +98,13 @@ function WorkspacesHubPage() {
           <h1 className="text-3xl font-extrabold text-text-primary dark:text-text-darkPrimary mb-2">
             Your Workspaces
           </h1>
-          <p className="text-text-secondary">
+          <p className="text-text-secondary text-[14px]">
             Select a workspace to jump in, or create a new one.
           </p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-5 py-2.5 bg-black dark:bg-white text-white dark:text-black rounded-xl font-semibold shadow-md hover:opacity-90 transition-opacity"
+          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-accent to-accent-secondary text-white rounded-xl font-bold shadow-lg shadow-accent/20 hover:shadow-accent/30 transition-all text-[14px]"
         >
           <Plus size={18} /> New Workspace
         </button>
@@ -115,9 +114,9 @@ function WorkspacesHubPage() {
         <motion.div
           whileHover={{ y: -4 }}
           onClick={() => setShowCreateModal(true)}
-          className="group cursor-pointer h-64 rounded-2xl border-2 border-dashed border-border dark:border-border-dark flex flex-col items-center justify-center gap-3 text-text-secondary hover:text-text-primary dark:hover:text-text-darkPrimary hover:border-text-secondary transition-colors hover:bg-muted/50 dark:hover:bg-muted-dark/50"
+          className="group cursor-pointer h-64 rounded-2xl border-2 border-dashed border-border dark:border-border-dark flex flex-col items-center justify-center gap-3 text-text-secondary hover:text-accent dark:hover:text-accent-dark hover:border-accent/40 dark:hover:border-accent-dark/40 transition-colors hover:bg-accent/5 dark:hover:bg-accent-dark/5"
         >
-          <div className="w-12 h-12 rounded-full bg-muted dark:bg-muted-dark flex items-center justify-center group-hover:scale-110 transition-transform">
+          <div className="w-12 h-12 rounded-full glass flex items-center justify-center group-hover:scale-110 transition-transform">
             <Plus size={24} />
           </div>
           <span className="font-semibold">Create New</span>
@@ -128,15 +127,15 @@ function WorkspacesHubPage() {
             key={ws.id}
             whileHover={{ y: -4 }}
             onClick={() => handleSelectWorkspace(ws)}
-            className="cursor-pointer h-64 rounded-2xl bg-surface dark:bg-surface-dark border border-border dark:border-border-dark shadow-sm hover:shadow-cardHover transition-all flex flex-col relative"
+            className="cursor-pointer h-64 rounded-2xl glass glass-shimmer shadow-sm hover:shadow-glassHover dark:hover:shadow-glassDark transition-all flex flex-col relative overflow-hidden"
           >
             {pinnedId == ws.id && (
-              <div className="absolute top-3 left-3 z-10 bg-black/60 backdrop-blur-md text-white px-2.5 py-1 rounded-md text-[10px] font-bold uppercase flex items-center gap-1 shadow-sm">
+              <div className="absolute top-3 left-3 z-10 bg-accent/80 backdrop-blur-md text-white px-2.5 py-1 rounded-md text-[10px] font-bold uppercase flex items-center gap-1 shadow-sm">
                 <Pin size={10} className="fill-white" /> Pinned
               </div>
             )}
 
-            <div className="h-32 w-full bg-muted dark:bg-muted-dark relative rounded-t-2xl overflow-hidden">
+            <div className="h-32 w-full relative rounded-t-2xl overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(232,120,74,0.08) 0%, rgba(240,221,208,0.15) 100%)' }}>
               {ws.coverImage ? (
                 <img src={ws.coverImage} alt="cover" className="w-full h-full object-cover" />
               ) : (
@@ -147,7 +146,7 @@ function WorkspacesHubPage() {
             </div>
 
             <div className="p-5 flex-1 flex flex-col relative">
-              <div className="absolute -top-6 left-5 w-12 h-12 bg-surface dark:bg-surface-dark rounded-xl shadow-md border border-border dark:border-border-dark flex items-center justify-center text-xl font-bold overflow-hidden">
+              <div className="absolute -top-6 left-5 w-12 h-12 glass rounded-xl shadow-md flex items-center justify-center text-xl font-bold overflow-hidden">
                 {renderIcon(ws.icon)}
               </div>
               
@@ -157,7 +156,7 @@ function WorkspacesHubPage() {
                     e.stopPropagation(); 
                     setOpenDropdownId(openDropdownId === ws.id ? null : ws.id);
                   }}
-                  className="p-1.5 rounded-lg text-text-secondary hover:bg-muted dark:hover:bg-muted-dark transition-colors"
+                  className="p-1.5 rounded-lg text-text-secondary hover:bg-white/40 dark:hover:bg-white/8 transition-colors"
                 >
                   <MoreVertical size={18} />
                 </button>
@@ -170,32 +169,32 @@ function WorkspacesHubPage() {
                       exit={{ opacity: 0, scale: 0.95, y: -10 }}
                       transition={{ duration: 0.15 }}
                       onClick={(e) => e.stopPropagation()} 
-                      className="absolute right-0 top-8 w-44 z-50 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-xl shadow-xl overflow-hidden py-1"
+                      className="absolute right-0 top-8 w-44 z-50 glass rounded-xl shadow-xl overflow-hidden py-1"
                     >
                       <button 
                         onClick={() => { setWorkspaceToEdit(ws); setOpenDropdownId(null); }}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text-primary dark:text-text-darkPrimary hover:bg-muted dark:hover:bg-muted-dark transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text-primary dark:text-text-darkPrimary hover:bg-white/40 dark:hover:bg-white/8 transition-colors"
                       >
-                        <Edit2 size={16} className="text-blue-500" /> Edit Workspace
+                        <Edit2 size={16} className="text-accent" /> Edit Workspace
                       </button>
 
                       {pinnedId == ws.id ? (
                         <button 
                           onClick={(e) => handleUnpinWorkspace(e)}
-                          className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text-primary dark:text-text-darkPrimary hover:bg-muted dark:hover:bg-muted-dark transition-colors"
+                          className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text-primary dark:text-text-darkPrimary hover:bg-white/40 dark:hover:bg-white/8 transition-colors"
                         >
                           <Pin size={16} className="text-text-secondary opacity-50" /> Unpin
                         </button>
                       ) : (
                         <button 
                           onClick={(e) => handlePinWorkspace(e, ws.id)}
-                          className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text-primary dark:text-text-darkPrimary hover:bg-muted dark:hover:bg-muted-dark transition-colors"
+                          className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text-primary dark:text-text-darkPrimary hover:bg-white/40 dark:hover:bg-white/8 transition-colors"
                         >
                           <Pin size={16} className="text-yellow-500" /> Pin as Default
                         </button>
                       )}
 
-                      <div className="h-px bg-border dark:bg-border-dark my-1 mx-2" />
+                      <div className="h-px bg-white/20 dark:bg-white/8 my-1 mx-2" />
 
                       <button 
                         onClick={() => { setWorkspaceToDelete(ws); setOpenDropdownId(null); }}

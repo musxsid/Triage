@@ -87,7 +87,7 @@ const EditProfileModal = ({ open, onClose, userData, onUpdated }) => {
           initial={{ opacity: 0, scale: 0.95, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
-          className="bg-surface dark:bg-surface-dark border border-border dark:border-border-dark p-6 rounded-[24px] shadow-2xl w-full max-w-md"
+          className="glass p-6 rounded-[24px] shadow-2xl w-full max-w-md"
         >
           {/* Header & Avatar */}
           <div className="flex items-center justify-between mb-8">
@@ -188,7 +188,7 @@ const EditProfileModal = ({ open, onClose, userData, onUpdated }) => {
             <button
               onClick={handleSave}
               disabled={saving || uploading}
-              className="px-6 py-2.5 rounded-xl text-sm font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition shadow-lg shadow-indigo-600/20 flex items-center gap-2 disabled:opacity-70"
+              className="px-6 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-accent to-accent-secondary text-white hover:shadow-accent/30 transition shadow-lg shadow-accent/20 flex items-center gap-2 disabled:opacity-70"
             >
               {(saving || uploading) && <Loader2 size={16} className="animate-spin" />}
               Save Changes

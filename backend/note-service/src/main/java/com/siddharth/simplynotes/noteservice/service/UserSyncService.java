@@ -42,8 +42,8 @@ public class UserSyncService {
             List<Workspace> workspaces = workspaceRepository.findByUser(saved);
             if (workspaces.isEmpty()) {
                 Workspace defaultWs = new Workspace();
-                defaultWs.setName("Personal Workspace");
-                defaultWs.setIcon("home");
+                defaultWs.setName("Personal");
+                defaultWs.setIcon("💼");
                 defaultWs.setUser(saved);
                 workspaceRepository.save(defaultWs);
             }

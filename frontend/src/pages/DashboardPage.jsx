@@ -126,7 +126,7 @@ function DashboardPage() {
         <ProfileMenu />
       </div>
 
-      {/* ═══ HEADER: Title + Activity + New Snippet ═══ */}
+      {/* ═══ HEADER: Title + Activity + New Note ═══ */}
       <div className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-5 mt-1">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-text-primary dark:text-text-darkPrimary flex items-center gap-3">
@@ -146,14 +146,14 @@ function DashboardPage() {
             Activity <ChevronDown size={14} className="text-text-secondary" />
           </button>
 
-          {/* New Snippet Button */}
+          {/* New Note Button */}
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => navigate("/notes/new")}
             className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-accent to-accent-secondary text-white text-[13px] font-bold shadow-lg shadow-accent/20 hover:shadow-accent/30 transition-all duration-200"
           >
-            <Plus size={16} /> New Snippet
+            <Plus size={16} /> New Note
           </motion.button>
         </div>
       </div>
@@ -219,17 +219,6 @@ function DashboardPage() {
         )
       )}
 
-      {/* ═══ FLOATING NEW SNIPPET BUTTON (Mobile / Always visible) ═══ */}
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => navigate("/notes/new")}
-        className="fixed bottom-8 left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:right-8 flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-accent to-accent-secondary text-white text-[14px] font-bold shadow-xl shadow-accent/25 z-50 glass-shimmer"
-      >
-        <span className="relative z-10 flex items-center gap-2">
-          <Plus size={18} /> New Snippet
-        </span>
-      </motion.button>
     </div>
   );
 }

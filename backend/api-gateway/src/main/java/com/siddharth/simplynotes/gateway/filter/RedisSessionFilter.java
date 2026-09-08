@@ -24,9 +24,23 @@ public class RedisSessionFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
 
-        // If Authorization header is already present, proceed as is
-        if (request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
-            return chain.filter(exchange);
+        String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+
+        // If Authorization header is already a valid JWT (contains dots)
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7).trim();
+            if (token.contains(".")) {
+                return chain.filter(exchange);
+            }
+            // If token is a sessionId (UUID), resolve from Redis
+            return redisTemplate.opsForValue().get("session:" + token)
+                    .flatMap(jwtToken -> {
+                        ServerHttpRequest mutatedRequest = request.mutate()
+                                .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtToken)
+                                .build();
+                        return chain.filter(exchange.mutate().request(mutatedRequest).build());
+                    })
+                    .switchIfEmpty(chain.filter(exchange));
         }
 
         // Check for SESSIONID cookie

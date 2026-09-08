@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
 import { Copy, KeyRound, Trash2, Bell, Loader2, Camera } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
@@ -80,7 +81,7 @@ const EditProfileModal = ({ open, onClose, userData, onUpdated }) => {
   
   const currentAvatar = formData.profilePicture || `https://api.dicebear.com/7.x/notionists/svg?seed=${seedName}&backgroundColor=transparent`;
 
-  return (
+  return createPortal(
     <AnimatePresence>
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
         <motion.div
@@ -98,71 +99,64 @@ const EditProfileModal = ({ open, onClose, userData, onUpdated }) => {
                 ) : (
                   <img 
                     src={currentAvatar} 
-                    alt="Profile" 
-                    className="w-full h-full object-cover group-hover:opacity-75 transition-opacity"
+                    alt="Avatar" 
+                    className="w-full h-full object-cover group-hover:opacity-75 transition"
                   />
                 )}
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition rounded-2xl">
+                  <Camera size={20} className="text-white" />
+                </div>
               </div>
-              
-              {/* Overlay Camera Icon on Hover */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 rounded-2xl pointer-events-none">
-                <Camera size={24} className="text-white" />
-              </div>
-
-              <button className="absolute -top-2 -right-2 p-1.5 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg hover:text-accent transition shadow-sm">
-                <Copy size={12} />
-              </button>
-            </div>
-
-            <div className="flex flex-col items-end gap-2">
               <input 
                 type="file" 
                 ref={fileInputRef} 
-                className="hidden" 
+                onChange={handleFileChange} 
                 accept="image/*" 
-                onChange={handleFileChange}
+                className="hidden" 
               />
-              <button 
-                onClick={() => fileInputRef.current.click()}
-                disabled={uploading}
-                className="px-4 py-2 border border-border dark:border-border-dark rounded-xl text-sm font-semibold hover:bg-muted dark:hover:bg-muted-dark transition disabled:opacity-50"
-              >
-                {uploading ? "Uploading..." : "Change Photo"}
-              </button>
-              <p className="text-[10px] text-text-secondary uppercase tracking-widest font-bold">Max 5MB</p>
+            </div>
+            
+            <div className="text-right">
+              <span className="text-xs font-semibold px-3 py-1 rounded-full bg-accent/10 text-accent dark:text-accent-dark">
+                Active Member
+              </span>
+              <p className="text-xs text-text-secondary mt-2">Personal Workspace</p>
             </div>
           </div>
 
           {/* Form Fields */}
-          <div className="space-y-4 mb-8">
-            <div className="flex gap-4">
-              <div className="flex-1 space-y-1.5">
-                <label className="text-[12px] font-bold text-text-primary dark:text-text-darkPrimary ml-1">First Name</label>
-                <input
-                  type="text"
+          <div className="space-y-4 mb-6">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-text-secondary uppercase tracking-wider mb-2">First Name</label>
+                <input 
+                  type="text" 
                   value={formData.firstName}
-                  onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-                  className="w-full bg-muted/50 dark:bg-muted-dark/50 border border-border dark:border-border-dark rounded-xl px-4 py-2.5 text-sm outline-none focus:border-accent transition text-text-primary dark:text-text-darkPrimary"
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  placeholder="First name" 
+                  className="w-full px-4 py-2.5 rounded-xl bg-surface dark:bg-surface-dark border border-border dark:border-border-dark text-sm text-text-primary dark:text-text-darkPrimary focus:outline-none focus:border-accent"
                 />
               </div>
-              <div className="flex-1 space-y-1.5">
-                <label className="text-[12px] font-bold text-text-primary dark:text-text-darkPrimary ml-1">Last Name</label>
-                <input
-                  type="text"
+              <div>
+                <label className="block text-xs font-bold text-text-secondary uppercase tracking-wider mb-2">Last Name</label>
+                <input 
+                  type="text" 
                   value={formData.lastName}
-                  onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-                  className="w-full bg-muted/50 dark:bg-muted-dark/50 border border-border dark:border-border-dark rounded-xl px-4 py-2.5 text-sm outline-none focus:border-accent transition text-text-primary dark:text-text-darkPrimary"
+                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  placeholder="Last name" 
+                  className="w-full px-4 py-2.5 rounded-xl bg-surface dark:bg-surface-dark border border-border dark:border-border-dark text-sm text-text-primary dark:text-text-darkPrimary focus:outline-none focus:border-accent"
                 />
               </div>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-bold text-text-primary dark:text-text-darkPrimary ml-1">Email</label>
-              <input
-                type="email"
+
+            <div>
+              <label className="block text-xs font-bold text-text-secondary uppercase tracking-wider mb-2">Email Address</label>
+              <input 
+                type="email" 
                 value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                placeholder={`${userData?.username || "user"}@simplynotes.io`}
-                className="w-full bg-muted/50 dark:bg-muted-dark/50 border border-border dark:border-border-dark rounded-xl px-4 py-2.5 text-sm outline-none focus:border-accent transition text-text-primary dark:text-text-darkPrimary placeholder:text-text-secondary/50"
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="name@example.com" 
+                className="w-full px-4 py-2.5 rounded-xl bg-surface dark:bg-surface-dark border border-border dark:border-border-dark text-sm text-text-primary dark:text-text-darkPrimary focus:outline-none focus:border-accent"
               />
             </div>
           </div>
@@ -196,7 +190,8 @@ const EditProfileModal = ({ open, onClose, userData, onUpdated }) => {
           </div>
         </motion.div>
       </div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
 

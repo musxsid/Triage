@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
 import { X, Plus, Image as ImageIcon, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { createWorkspace, uploadWorkspaceCover } from "../../services/workspaceService";
@@ -47,13 +48,17 @@ function CreateWorkspaceModal({ open, onClose, onCreated }) {
       onClose();   
     } catch (err) {
       console.error(err);
-      toast.error("Failed to create workspace");
+      if (err.response?.status === 401) {
+        toast.error("Session expired. Please log in again.");
+      } else {
+        toast.error(err.response?.data?.message || "Failed to create workspace");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -62,14 +67,14 @@ function CreateWorkspaceModal({ open, onClose, onCreated }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/50 backdrop-blur-md"
           />
 
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="relative w-full max-w-md glass rounded-2xl shadow-2xl overflow-hidden"
+            className="relative w-full max-w-md glass-strong rounded-3xl shadow-2xl overflow-hidden border border-white/35 dark:border-white/10"
           >
             <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
 
@@ -118,7 +123,6 @@ function CreateWorkspaceModal({ open, onClose, onCreated }) {
 
               <div className="flex justify-end gap-3 mt-4">
                 <button type="button" onClick={onClose} className="px-5 py-2.5 rounded-xl text-sm font-semibold text-text-secondary hover:bg-muted dark:hover:bg-muted-dark">Cancel</button>
-                {/* 🔥 FIXED BUTTON STYLING HERE */}
                 <button type="submit" disabled={isLoading || !name.trim()} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-accent to-accent-secondary text-white disabled:opacity-50 transition-all shadow-lg shadow-accent/20 hover:shadow-accent/30">
                   {isLoading ? "Creating..." : <><Plus size={16} /> Create</>}
                 </button>
@@ -127,7 +131,8 @@ function CreateWorkspaceModal({ open, onClose, onCreated }) {
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
 

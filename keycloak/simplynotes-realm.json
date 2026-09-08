@@ -1,6 +1,9 @@
 {
   "realm": "simplynotes",
   "enabled": true,
+  "accessTokenLifespan": 86400,
+  "ssoSessionIdleTimeout": 86400,
+  "ssoSessionMaxLifespan": 86400,
   "registrationAllowed": true,
   "registrationEmailAsUsername": false,
   "rememberMe": true,

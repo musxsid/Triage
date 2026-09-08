@@ -11,6 +11,9 @@ import SignupPage from "./pages/SignupPage";
 import DashboardPage from "./pages/DashboardPage";
 import NoteEditorPage from "./pages/NoteEditorPage";
 import WorkspacesHubPage from "./pages/WorkspacesHubPage"; 
+import AiAssistantPage from "./pages/AiAssistantPage"; 
+import EmailPage from "./pages/EmailPage";
+import CalendarPage from "./pages/CalendarPage";
 
 import PublicNotePage from "./pages/PublicNotePage"; 
 
@@ -56,6 +59,9 @@ function App() {
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
             <Route path="/notes/:id" element={<ProtectedRoute><NoteEditorPage /></ProtectedRoute>} />
             <Route path="/workspaces" element={<ProtectedRoute><WorkspacesHubPage /></ProtectedRoute>} />
+            <Route path="/ai" element={<ProtectedRoute><AiAssistantPage /></ProtectedRoute>} />
+            <Route path="/email" element={<ProtectedRoute><EmailPage /></ProtectedRoute>} />
+            <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
             
             <Route path="/share/:token" element={<PublicNotePage />} />
           </Routes>

@@ -44,6 +44,14 @@ public class WorkspaceController {
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not authenticated");
 
         List<Workspace> workspaces = workspaceRepository.findByUser(user);
+        if (workspaces.isEmpty()) {
+            Workspace defaultWs = new Workspace();
+            defaultWs.setName("Personal");
+            defaultWs.setIcon("💼");
+            defaultWs.setUser(user);
+            workspaceRepository.save(defaultWs);
+            workspaces = workspaceRepository.findByUser(user);
+        }
         List<WorkspaceDTO> response = workspaces.stream().map(WorkspaceDTO::new).collect(Collectors.toList());
         return ResponseEntity.ok(response);
     }

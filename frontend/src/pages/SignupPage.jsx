@@ -1,13 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { signup } from "../services/notesService";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
-import { FileText } from "lucide-react";
-import axios from "axios";
-
-const signup = async (data) => {
-  return axios.post("http://localhost:8080/api/auth/register", data);
-};
+import { Eye, EyeOff, Zap, Shield, Sparkles, ArrowRight, User, Lock, Mail, UserCircle } from "lucide-react";
 
 function SignupPage() {
   const [firstName, setFirstName] = useState("");
@@ -16,6 +12,7 @@ function SignupPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
 
@@ -29,128 +26,323 @@ function SignupPage() {
       setLoading(true);
       await signup({ firstName, lastName, email, username, password });
       toast.success("Account created successfully!");
-      
+
       localStorage.removeItem("token");
       localStorage.removeItem("activeWorkspaceId");
       localStorage.removeItem("pinnedWorkspaceId");
-      
+
       navigate("/login");
     } catch (err) {
-      const errorMsg = err.response?.data || "Signup failed";
-      toast.error(errorMsg);
+      const errorMsg = err.response?.data?.error || err.response?.data || "Signup failed";
+      toast.error(typeof errorMsg === 'string' ? errorMsg : "Signup failed");
     } finally {
       setLoading(false);
     }
   };
 
-  const darkMode = document.documentElement.classList.contains("dark");
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") handleSignup();
+  };
 
-  const inputClass = "w-full mb-3 p-3 rounded-xl glass-subtle text-text-primary dark:text-text-darkPrimary placeholder:text-text-secondary/50 outline-none focus:shadow-glassHover transition-all text-[14px]";
+  const features = [
+    { icon: Zap, title: "Lightning Fast", desc: "Instant note creation & search" },
+    { icon: Shield, title: "Secure", desc: "End-to-end encrypted workspaces" },
+    { icon: Sparkles, title: "AI Powered", desc: "Smart suggestions & summaries" },
+  ];
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
-
-      {/* ═══ MARBLED PEACH BACKGROUND ═══ */}
-      <div className="absolute inset-0 -z-10">
-        {darkMode ? (
-          <>
-            <div className="absolute inset-0 bg-gradient-to-br from-[#1A1412] via-[#1E1714] to-[#141210]" />
-            <div className="absolute w-[500px] h-[500px] bg-[#D4805C]/10 blur-[140px] top-[-120px] right-[-120px] rounded-full" />
-            <div className="absolute w-[400px] h-[400px] bg-[#E8784A]/8 blur-[140px] bottom-[-120px] left-[-120px] rounded-full" />
-          </>
-        ) : (
-          <>
-            <div className="absolute inset-0 bg-[#FFF8F3]" />
-            <div className="absolute w-[600px] h-[600px] bg-gradient-to-br from-[#FDDCC4]/60 via-[#FFF0E6]/30 to-transparent blur-[100px] top-[-200px] left-[-150px] rounded-full" />
-            <div className="absolute w-[500px] h-[500px] bg-gradient-to-tl from-[#F8C9A8]/40 via-[#FDE8D8]/20 to-transparent blur-[100px] bottom-[-150px] right-[-100px] rounded-full" />
-            <div className="absolute w-[250px] h-[250px] bg-gradient-to-r from-[#FFE4D0]/30 to-transparent blur-[60px] top-[40%] right-[25%] rounded-full" />
-          </>
-        )}
+    <div className="relative min-h-screen flex overflow-hidden">
+      
+      {/* ═══ ABSOLUTE TOP-LEFT LOGO ═══ */}
+      <div className="absolute top-6 left-6 lg:top-10 lg:left-12 z-50 flex items-center gap-3">
+        <div className="w-10 h-10 lg:w-11 lg:h-11 rounded-xl bg-gradient-to-br from-accent to-accent-secondary lg:from-white/20 lg:to-white/10 lg:backdrop-blur-sm lg:border lg:border-white/30 flex items-center justify-center shadow-lg shadow-accent/20 lg:shadow-none transition-all">
+          <img src="/favicon.svg" alt="SimplyNotes" className="w-5 h-5 lg:w-6 lg:h-6 brightness-0 invert" />
+        </div>
+        <span className="text-xl lg:text-2xl font-bold text-text-primary dark:text-text-darkPrimary lg:text-white dark:lg:text-white tracking-tight drop-shadow-sm lg:drop-shadow-none">
+          SimplyNotes
+        </span>
       </div>
 
+      {/* ═══ LEFT PANEL — BRAND SHOWCASE ═══ */}
       <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="glass glass-shimmer rounded-3xl shadow-2xl p-8 w-[420px] text-center z-10 relative"
+        initial={{ opacity: 0, x: -60 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
+        className="hidden lg:flex lg:w-[55%] relative flex-col justify-center p-12 overflow-hidden"
       >
+        {/* Gradient Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#E8784A] via-[#D4805C] to-[#C96B3C]" />
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjA4KSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3QgZmlsbD0idXJsKCNnKSIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIvPjwvc3ZnPg==')] opacity-60" />
+        
+        {/* Floating Orbs */}
+        <div className="absolute w-[300px] h-[300px] bg-white/10 blur-[80px] rounded-full top-[-50px] right-[-50px] animate-pulse-glow" />
+        <div className="absolute w-[200px] h-[200px] bg-white/8 blur-[60px] rounded-full bottom-[20%] left-[-40px] animate-float-slow" />
+        <div className="absolute w-[150px] h-[150px] bg-[#FFD4B8]/15 blur-[50px] rounded-full top-[40%] right-[20%] animate-float-reverse" />
 
-        {/* Brand Header */}
-        <div className="flex items-center justify-center gap-2.5 mb-2">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-accent to-accent-secondary flex items-center justify-center shadow-lg shadow-accent/20">
-            <FileText size={15} className="text-white" />
-          </div>
-          <h1 className="text-xl font-bold tracking-tight text-text-primary dark:text-text-darkPrimary">
-            SimplyNotes
-          </h1>
-        </div>
-
-        <p className="text-sm text-text-secondary mb-6">
-          Build your workspace, your way.
-        </p>
-
-        {/* Profile Name Grid */}
-        <div className="flex gap-2">
-           <input
-            type="text"
-            placeholder="First Name"
-            className={inputClass}
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-          />
-          <input
-            type="text"
-            placeholder="Last Name"
-            className={inputClass}
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-          />
-        </div>
-
-        {/* Email Address */}
-        <input
-          type="email"
-          placeholder="Email Address"
-          className={inputClass}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-
-        {/* Authentication Credentials */}
-        <input
-          type="text"
-          placeholder="Username"
-          className={inputClass}
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
-
-        <input
-          type="password"
-          placeholder="Password"
-          className="w-full mb-6 p-3 rounded-xl glass-subtle text-text-primary dark:text-text-darkPrimary placeholder:text-text-secondary/50 outline-none focus:shadow-glassHover transition-all text-[14px]"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-
-        <button
-          onClick={handleSignup}
-          disabled={loading}
-          className="w-full py-3 rounded-xl font-bold text-[14px] bg-gradient-to-r from-accent to-accent-secondary text-white shadow-lg shadow-accent/20 hover:shadow-accent/30 transition-all active:scale-95 disabled:opacity-60"
-        >
-          {loading ? "Creating account..." : "Sign up"}
-        </button>
-
-        <p className="text-sm mt-5 text-text-secondary">
-          Already have an account?{" "}
-          <span
-            onClick={() => navigate("/login")}
-            className="text-accent dark:text-accent-dark cursor-pointer hover:underline font-semibold"
+        {/* Center — Hero Content */}
+        <div className="relative z-10 max-w-lg mt-12">
+          <motion.h2
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.6 }}
+            className="text-4xl xl:text-5xl font-extrabold text-white leading-tight mb-4 tracking-tight"
           >
-            Log in
-          </span>
-        </p>
+            Start building your<br />
+            <span className="text-white/80">perfect workspace.</span>
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.6 }}
+            className="text-white/70 text-lg leading-relaxed"
+          >
+            Join thousands of creators who use SimplyNotes to organize 
+            their ideas and supercharge their productivity.
+          </motion.p>
 
+          {/* Feature Pills */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7, duration: 0.6 }}
+            className="flex flex-wrap gap-3 mt-8"
+          >
+            {features.map((f, i) => (
+              <motion.div
+                key={f.title}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.8 + i * 0.1 }}
+                className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all cursor-default"
+              >
+                <f.icon size={16} className="text-white/90" />
+                <div>
+                  <p className="text-white text-xs font-semibold">{f.title}</p>
+                  <p className="text-white/60 text-[10px]">{f.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+
+        {/* Bottom — Social Proof */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.2 }}
+          className="absolute bottom-12 left-12 z-10"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex -space-x-2">
+              {[...Array(4)].map((_, i) => (
+                <div
+                  key={i}
+                  className="w-8 h-8 rounded-full border-2 border-[#D4805C] bg-gradient-to-br from-white/30 to-white/10 backdrop-blur-sm"
+                />
+              ))}
+            </div>
+            <p className="text-white/80 text-sm">
+              <span className="text-white font-semibold">2,000+</span> creators love SimplyNotes
+            </p>
+          </div>
+        </motion.div>
       </motion.div>
+
+      {/* ═══ RIGHT PANEL — SIGNUP FORM ═══ */}
+      <div className="flex-1 flex items-center justify-center relative">
+        {/* Animated App-Themed Background Elements */}
+        <div className="absolute inset-0 -z-10 overflow-hidden bg-[#FFF8F3] dark:bg-[#1A1412]">
+          <div className="absolute w-[400px] h-[400px] bg-gradient-to-br from-[#FDDCC4]/40 via-[#FFF0E6]/20 to-transparent blur-[100px] top-[-100px] right-[-50px] rounded-full" />
+          <div className="absolute w-[300px] h-[300px] bg-gradient-to-tl from-[#F8C9A8]/30 via-[#FDE8D8]/15 to-transparent blur-[80px] bottom-[-80px] left-[-50px] rounded-full" />
+          
+          {/* Floating Note 1 */}
+          <motion.div 
+            animate={{ y: [0, -20, 0], rotate: [0, 5, 0] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute top-[15%] right-[10%] w-48 h-32 bg-white/60 dark:bg-white/5 backdrop-blur-md rounded-xl border border-white/80 dark:border-white/10 shadow-lg p-4 transform rotate-12"
+          >
+            <div className="w-2/3 h-2 bg-accent/30 rounded-full mb-3" />
+            <div className="w-full h-1.5 bg-text-secondary/20 rounded-full mb-2" />
+            <div className="w-4/5 h-1.5 bg-text-secondary/20 rounded-full mb-2" />
+            <div className="w-1/2 h-1.5 bg-text-secondary/20 rounded-full" />
+          </motion.div>
+          
+          {/* Floating Task List */}
+          <motion.div 
+            animate={{ y: [0, 20, 0], rotate: [0, -5, 0] }}
+            transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+            className="absolute bottom-[20%] lg:bottom-[15%] left-[5%] lg:-left-12 w-44 h-40 bg-accent/5 backdrop-blur-md rounded-xl border border-accent/10 shadow-lg p-4 transform -rotate-6"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-3 h-3 rounded bg-accent/40" />
+              <div className="w-20 h-2 bg-text-secondary/30 rounded-full" />
+            </div>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-3 h-3 rounded bg-text-secondary/20" />
+              <div className="w-24 h-2 bg-text-secondary/20 rounded-full" />
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded bg-text-secondary/20" />
+              <div className="w-16 h-2 bg-text-secondary/20 rounded-full" />
+            </div>
+          </motion.div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="w-full max-w-[420px] px-8 z-10"
+        >
+          {/* Header */}
+          <div className="mb-8 mt-12 lg:mt-0 text-center lg:text-left">
+            <h1 className="text-3xl font-extrabold text-text-primary dark:text-text-darkPrimary tracking-tight">
+              Create account
+            </h1>
+            <p className="text-text-secondary text-sm mt-2">
+              Start building your free workspace today
+            </p>
+          </div>
+
+          {/* Form */}
+          <div className="space-y-4">
+            {/* Name Row */}
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="text-xs font-semibold text-text-secondary mb-1.5 block uppercase tracking-wide">First Name</label>
+                <div className="relative group">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary/40 group-focus-within:text-accent transition-colors">
+                    <UserCircle size={18} />
+                  </div>
+                  <input
+                    id="signup-firstname"
+                    type="text"
+                    placeholder="John"
+                    className="w-full pl-10 pr-3 py-3 rounded-xl glass-strong text-text-primary dark:text-text-darkPrimary placeholder:text-text-secondary/40 outline-none focus:ring-2 focus:ring-accent/30 transition-all text-sm shadow-sm"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                  />
+                </div>
+              </div>
+              <div className="flex-1">
+                <label className="text-xs font-semibold text-text-secondary mb-1.5 block uppercase tracking-wide">Last Name</label>
+                <input
+                  id="signup-lastname"
+                  type="text"
+                  placeholder="Doe"
+                  className="w-full px-4 py-3 rounded-xl glass-strong text-text-primary dark:text-text-darkPrimary placeholder:text-text-secondary/40 outline-none focus:ring-2 focus:ring-accent/30 transition-all text-sm shadow-sm"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                />
+              </div>
+            </div>
+
+            {/* Email */}
+            <div>
+              <label className="text-xs font-semibold text-text-secondary mb-1.5 block uppercase tracking-wide">Email Address</label>
+              <div className="relative group">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary/40 group-focus-within:text-accent transition-colors">
+                  <Mail size={18} />
+                </div>
+                <input
+                  id="signup-email"
+                  type="email"
+                  placeholder="john@example.com"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl glass-strong text-text-primary dark:text-text-darkPrimary placeholder:text-text-secondary/40 outline-none focus:ring-2 focus:ring-accent/30 transition-all text-sm shadow-sm"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                />
+              </div>
+            </div>
+
+            {/* Username */}
+            <div>
+              <label className="text-xs font-semibold text-text-secondary mb-1.5 block uppercase tracking-wide">Username</label>
+              <div className="relative group">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary/40 group-focus-within:text-accent transition-colors">
+                  <User size={18} />
+                </div>
+                <input
+                  id="signup-username"
+                  type="text"
+                  placeholder="Choose a username"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl glass-strong text-text-primary dark:text-text-darkPrimary placeholder:text-text-secondary/40 outline-none focus:ring-2 focus:ring-accent/30 transition-all text-sm shadow-sm"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                />
+              </div>
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className="text-xs font-semibold text-text-secondary mb-1.5 block uppercase tracking-wide">Password</label>
+              <div className="relative group">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary/40 group-focus-within:text-accent transition-colors">
+                  <Lock size={18} />
+                </div>
+                <input
+                  id="signup-password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Create a strong password"
+                  className="w-full pl-10 pr-12 py-3 rounded-xl glass-strong text-text-primary dark:text-text-darkPrimary placeholder:text-text-secondary/40 outline-none focus:ring-2 focus:ring-accent/30 transition-all text-sm shadow-sm"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary/40 hover:text-text-secondary transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Sign Up Button */}
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={handleSignup}
+            disabled={loading}
+            className="w-full mt-8 py-3.5 rounded-xl font-bold text-sm bg-gradient-to-r from-accent to-accent-secondary text-white shadow-lg shadow-accent/30 hover:shadow-accent/50 hover:-translate-y-0.5 transition-all disabled:opacity-60 disabled:hover:translate-y-0 flex items-center justify-center gap-2 group"
+          >
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Creating account...
+              </div>
+            ) : (
+              <>
+                Create account
+                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              </>
+            )}
+          </motion.button>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 my-6">
+            <div className="flex-1 h-px bg-border dark:bg-border-dark" />
+            <span className="text-xs font-medium text-text-secondary/60 uppercase tracking-wider">or</span>
+            <div className="flex-1 h-px bg-border dark:bg-border-dark" />
+          </div>
+
+          {/* Login Link */}
+          <p className="text-sm text-text-secondary text-center font-medium">
+            Already have an account?{" "}
+            <span
+              onClick={() => navigate("/login")}
+              className="text-accent dark:text-accent-dark cursor-pointer hover:underline font-bold"
+            >
+              Sign in
+            </span>
+          </p>
+        </motion.div>
+      </div>
     </div>
   );
 }

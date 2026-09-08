@@ -4,20 +4,86 @@ import { Pencil, SlidersHorizontal, Shield } from "lucide-react";
 import EditProfileModal from "./EditProfileModal";
 import axios from "axios";
 
+const parseJwt = (token) => {
+  try {
+    if (!token || !token.includes(".")) return null;
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      window
+        .atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
+};
+
 const ProfileMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [user, setUser] = useState(null);
+  
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem("user");
+      if (stored) return JSON.parse(stored);
+      const token = localStorage.getItem("token");
+      const claims = parseJwt(token);
+      if (claims) {
+        return {
+          username: claims.preferred_username || claims.sub || "user",
+          email: claims.email || `${claims.preferred_username || "user"}@simplynotes.io`,
+          firstName: claims.given_name || claims.name || claims.preferred_username || "User",
+          lastName: claims.family_name || "",
+        };
+      }
+      const storedUser = localStorage.getItem("username");
+      if (storedUser) {
+        return { username: storedUser, email: `${storedUser}@simplynotes.io`, firstName: storedUser };
+      }
+    } catch (e) {}
+    return null;
+  });
+  
   const menuRef = useRef(null);
 
   const fetchUser = async () => {
+    const token = localStorage.getItem("token");
     try {
       const res = await axios.get("http://localhost:8080/api/auth/me", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        withCredentials: true,
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
-      setUser(res.data);
+      if (res.data && res.data.username) {
+        setUser(res.data);
+        localStorage.setItem("user", JSON.stringify(res.data));
+      } else {
+        const claims = parseJwt(token);
+        if (claims) {
+          const u = {
+            username: claims.preferred_username || claims.sub,
+            email: claims.email || `${claims.preferred_username || "user"}@simplynotes.io`,
+            firstName: claims.given_name || claims.name || claims.preferred_username,
+            lastName: claims.family_name || "",
+          };
+          setUser(u);
+          localStorage.setItem("user", JSON.stringify(u));
+        }
+      }
     } catch (err) {
       console.error("Failed to fetch profile", err);
+      const claims = parseJwt(token);
+      if (claims) {
+        setUser({
+          username: claims.preferred_username || claims.sub,
+          email: claims.email || `${claims.preferred_username || "user"}@simplynotes.io`,
+          firstName: claims.given_name || claims.name || claims.preferred_username,
+          lastName: claims.family_name || "",
+        });
+      }
     }
   };
 
@@ -36,11 +102,13 @@ const ProfileMenu = () => {
   }, []);
 
   // Safe display fallbacks
-  const displayName = user?.firstName 
+  const displayName = user?.name
+    ? user.name
+    : user?.firstName 
     ? `${user.firstName} ${user.lastName || ""}`.trim() 
-    : user?.username || "Loading...";
-  const displayEmail = user?.email || `${user?.username || "user"}@simplynotes.io`;
-  const seedName = user?.firstName || user?.username || "Siddh";
+    : user?.username || "User";
+  const displayEmail = user?.email || (user?.username ? `${user.username}@simplynotes.io` : "user@simplynotes.io");
+  const seedName = user?.firstName || user?.username || "User";
 
   return (
     <div className="relative" ref={menuRef}>

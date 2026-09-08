@@ -22,6 +22,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"}, allowCredentials = "true")
 public class AuthController {
 
     @Value("${keycloak.auth-server-url:http://localhost:8081}")
@@ -83,11 +84,12 @@ public class AuthController {
                                         .build();
 
                                 exchange.getResponse().addCookie(cookie);
-                                Map<String, Object> success = Map.of(
-                                        "status", "success",
-                                        "username", username,
-                                        "sessionId", sessionId
-                                );
+                                Map<String, Object> success = new HashMap<>();
+                                success.put("status", "success");
+                                success.put("username", username);
+                                success.put("sessionId", sessionId);
+                                success.put("token", accessToken);
+                                success.put("accessToken", accessToken);
                                 return ResponseEntity.ok(success);
                             });
                 })
@@ -106,7 +108,11 @@ public class AuthController {
         Map<String, Object> userPayload = new HashMap<>();
         userPayload.put("username", username);
         userPayload.put("enabled", true);
+        userPayload.put("emailVerified", true);
+        userPayload.put("firstName", username);
+        userPayload.put("lastName", "User");
         userPayload.put("email", email != null ? email : username + "@example.com");
+        userPayload.put("requiredActions", java.util.Collections.emptyList());
         userPayload.put("credentials", java.util.List.of(Map.of("type", "password", "value", password, "temporary", false)));
 
         String adminTokenUrl = String.format("%s/realms/master/protocol/openid-connect/token", keycloakUrl);
@@ -164,19 +170,72 @@ public class AuthController {
         return Mono.just(ResponseEntity.ok(Map.of("message", "Logged out")));
     }
 
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+
+    private Map<String, Object> parseJwtClaims(String token) {
+        Map<String, Object> details = new HashMap<>();
+        details.put("authenticated", true);
+        if (token == null || !token.contains(".")) {
+            details.put("username", "user");
+            details.put("email", "user@simplynotes.io");
+            return details;
+        }
+
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length >= 2) {
+                byte[] decodedBytes = java.util.Base64.getUrlDecoder().decode(parts[1]);
+                Map<String, Object> claims = objectMapper.readValue(decodedBytes, Map.class);
+                String username = (String) claims.getOrDefault("preferred_username", claims.getOrDefault("sub", "user"));
+                String email = (String) claims.getOrDefault("email", username + "@simplynotes.io");
+                String firstName = (String) claims.getOrDefault("given_name", claims.getOrDefault("name", username));
+                String lastName = (String) claims.getOrDefault("family_name", "");
+
+                details.put("username", username);
+                details.put("email", email);
+                details.put("firstName", firstName);
+                details.put("lastName", lastName);
+                details.put("name", (firstName + " " + lastName).trim());
+            }
+        } catch (Exception e) {
+            details.put("username", "user");
+            details.put("email", "user@simplynotes.io");
+        }
+        return details;
+    }
+
     @GetMapping("/me")
     public Mono<ResponseEntity<Map<String, Object>>> getCurrentUser(ServerWebExchange exchange) {
+        String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+        String sessionKey = null;
+
         HttpCookie cookie = exchange.getRequest().getCookies().getFirst("SESSIONID");
-        if (cookie == null) {
+        if (cookie != null && !cookie.getValue().isEmpty()) {
+            sessionKey = cookie.getValue();
+        } else if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            sessionKey = authHeader.substring(7).trim();
+        }
+
+        if (sessionKey == null || sessionKey.isEmpty()) {
             Map<String, Object> err = Map.of("error", "Not authenticated");
             return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(err));
         }
 
-        Map<String, Object> me = Map.of("authenticated", true, "session", cookie.getValue());
+        final String currentSession = sessionKey;
         Map<String, Object> expired = Map.of("error", "Session expired");
 
-        return redisTemplate.opsForValue().get("session:" + cookie.getValue())
-                .map(jwt -> ResponseEntity.ok(me))
+        if (sessionKey.contains(".")) {
+            Map<String, Object> me = parseJwtClaims(sessionKey);
+            me.put("session", currentSession);
+            return Mono.just(ResponseEntity.ok(me));
+        }
+
+        return redisTemplate.opsForValue().get("session:" + sessionKey)
+                .map(jwt -> {
+                    Map<String, Object> me = parseJwtClaims(jwt);
+                    me.put("session", currentSession);
+                    return ResponseEntity.ok(me);
+                })
                 .defaultIfEmpty(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(expired));
     }
 }

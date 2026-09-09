@@ -31,7 +31,26 @@ function WorkspacesHubPage() {
     }
   };
 
-  useEffect(() => { fetchWorkspaces(); }, []);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+    const username = params.get("username");
+    if (token) {
+      localStorage.setItem("token", token);
+      if (username) {
+        localStorage.setItem("username", username);
+        const userObj = {
+          username: username,
+          email: `${username}@triage.io`,
+          firstName: username
+        };
+        localStorage.setItem("user", JSON.stringify(userObj));
+      }
+      toast.success("Signed in successfully with Google!");
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    fetchWorkspaces();
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = () => setOpenDropdownId(null);

@@ -42,7 +42,7 @@ const INITIAL_EVENTS = [
     month: 8,
     year: 2026,
     time: "04:30 PM",
-    title: "SimplyNotes v1.0 Beta Release",
+    title: "Triage v1.0 Beta Release",
     category: "Milestone",
     color: "bg-amber-500",
     description: "Deploy to staging cluster and invite initial user cohort for feedback.",

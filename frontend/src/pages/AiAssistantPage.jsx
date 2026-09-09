@@ -34,7 +34,7 @@ const STARTER_CHIPS = [
     title: "Polish & Elevate",
     action: "Improve Writing",
     icon: "✨",
-    prompt: "SimplyNotes is very fast and looks really nice with glass effects and it lets users keep their notes in one spot without complicated folders or slow loading times.",
+    prompt: "Triage is very fast and looks really nice with glass effects and it lets users keep their notes in one spot without complicated folders or slow loading times.",
   },
   {
     title: "Project Milestone",

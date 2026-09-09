@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { getPublicNote } from "../services/notesService";
 import { Loader2, FileText } from "lucide-react";
 import { motion } from "framer-motion";
+import TriageLogo from "../components/ui/TriageLogo";
 
 function PublicNotePage() {
   const { token } = useParams();
@@ -66,16 +67,16 @@ function PublicNotePage() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-3xl flex justify-between items-center mb-12"
       >
-        <div className="flex items-center gap-2 text-text-secondary">
-          <FileText size={18} />
-          <span className="font-bold tracking-tight text-sm uppercase">Shared via SimplyNotes</span>
+        <div className="flex items-center gap-2.5 text-text-secondary dark:text-text-darkSecondary">
+          <TriageLogo size={22} />
+          <span className="font-bold tracking-tight text-sm uppercase">Shared via Triage</span>
         </div>
         
         <Link 
           to="/signup" 
           className="text-xs font-bold text-accent dark:text-accent-dark bg-accent/10 px-3 py-1.5 rounded-lg hover:bg-accent/20 transition"
         >
-          Get SimplyNotes
+          Get Triage
         </Link>
       </motion.div>
 

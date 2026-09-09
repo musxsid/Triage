@@ -32,7 +32,7 @@ spring:
         - id: note-service-route
           uri: ${NOTE_SERVICE_URL:http://localhost:8082}
           predicates:
-            - Path=/api/notes/**, /api/workspaces/**, /api/folders/**
+            - Path=/api/notes/**, /api/workspaces/**, /api/folders/**, /api/gmail/**, /api/calendar/**, /api/auth/google/**
 
         - id: ai-service-route
           uri: ${AI_SERVICE_URL:http://localhost:8083}

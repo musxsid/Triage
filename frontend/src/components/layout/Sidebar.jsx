@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import FolderCreateModal from "../ui/FolderCreateModal";
 import CreateWorkspaceModal from "../ui/CreateWorkspaceModal";
+import TriageLogo from "../ui/TriageLogo";
 import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -176,18 +177,11 @@ const Sidebar = () => {
       {/* ═══ TOP: BRAND & WORKSPACE ═══ */}
       <div className="px-4 pt-5 pb-2">
         {/* Brand */}
-        <div className="flex items-center gap-2.5 px-2 mb-4">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-accent to-accent-secondary flex items-center justify-center shadow-md shadow-accent/25">
-            <FileText size={16} className="text-white" />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-base font-bold tracking-tight text-text-primary dark:text-text-darkPrimary">
-              SimplyNotes
-            </span>
-            <span className="text-[9px] font-extrabold text-accent bg-accent/10 px-1.5 py-0.5 rounded-md uppercase tracking-wider">
-              Beta
-            </span>
-          </div>
+        <div 
+          className="flex items-center gap-2.5 px-2 mb-4 cursor-pointer group"
+          onClick={() => navigate("/dashboard")}
+        >
+          <TriageLogo size={32} showWordmark={true} betaTag={true} />
         </div>
 
         {/* ═══ WORKSPACE SWITCHER ═══ */}

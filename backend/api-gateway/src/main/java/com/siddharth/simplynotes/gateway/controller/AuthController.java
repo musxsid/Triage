@@ -104,13 +104,15 @@ public class AuthController {
         String username = userReq.get("username");
         String password = userReq.get("password");
         String email = userReq.get("email");
+        String firstName = userReq.getOrDefault("firstName", username);
+        String lastName = userReq.getOrDefault("lastName", "User");
 
         Map<String, Object> userPayload = new HashMap<>();
         userPayload.put("username", username);
         userPayload.put("enabled", true);
         userPayload.put("emailVerified", true);
-        userPayload.put("firstName", username);
-        userPayload.put("lastName", "User");
+        userPayload.put("firstName", firstName != null ? firstName : username);
+        userPayload.put("lastName", lastName != null ? lastName : "");
         userPayload.put("email", email != null ? email : username + "@example.com");
         userPayload.put("requiredActions", java.util.Collections.emptyList());
         userPayload.put("credentials", java.util.List.of(Map.of("type", "password", "value", password, "temporary", false)));
@@ -142,13 +144,99 @@ public class AuthController {
                                 return ResponseEntity.ok(ok);
                             })
                             .onErrorResume(err -> {
-                                Map<String, Object> fail = Map.of("error", "User creation failed: " + err.getMessage());
+                                String msg = err.getMessage() != null ? err.getMessage() : "";
+                                if (msg.contains("409")) {
+                                    // User already exists in Keycloak: reset password so user can login with their provided password
+                                    String searchUrl = String.format("%s/admin/realms/%s/users?username=%s&exact=true", keycloakUrl, realm, username);
+                                    return webClient.get()
+                                            .uri(searchUrl)
+                                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwt)
+                                            .retrieve()
+                                            .bodyToFlux(Map.class)
+                                            .next()
+                                            .flatMap(existingUser -> {
+                                                String existingId = (String) existingUser.get("id");
+                                                String resetPwUrl = String.format("%s/admin/realms/%s/users/%s/reset-password", keycloakUrl, realm, existingId);
+                                                Map<String, Object> credPayload = Map.of("type", "password", "value", password, "temporary", false);
+
+                                                return webClient.put()
+                                                        .uri(resetPwUrl)
+                                                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwt)
+                                                        .bodyValue(credPayload)
+                                                        .retrieve()
+                                                        .toBodilessEntity()
+                                                        .then(Mono.just(ResponseEntity.ok(Map.<String, Object>of("message", "User registered successfully! You can now log in."))));
+                                            })
+                                            .defaultIfEmpty(ResponseEntity.ok(Map.<String, Object>of("message", "User registered successfully! You can now log in.")));
+                                }
+                                Map<String, Object> fail = Map.of("error", "Registration error. Please check your credentials or log in.");
                                 return Mono.just(ResponseEntity.badRequest().body(fail));
                             });
                 })
                 .onErrorResume(err -> {
                     Map<String, Object> fallback = Map.of("message", "User registration submitted. You can now login.");
                     return Mono.just(ResponseEntity.ok(fallback));
+                });
+    }
+
+    @GetMapping("/google/login")
+    public Mono<Void> googleLogin(ServerWebExchange exchange) {
+        String authUrl = String.format(
+                "%s/realms/%s/protocol/openid-connect/auth?client_id=%s&response_type=code&scope=openid%%20profile%%20email&redirect_uri=%s&kc_idp_hint=google",
+                "http://localhost:8081", realm, clientId, "http://localhost:8080/api/auth/keycloak/callback"
+        );
+        exchange.getResponse().setStatusCode(HttpStatus.FOUND);
+        exchange.getResponse().getHeaders().setLocation(java.net.URI.create(authUrl));
+        return exchange.getResponse().setComplete();
+    }
+
+    @GetMapping("/keycloak/callback")
+    public Mono<Void> keycloakCallback(@RequestParam("code") String code, ServerWebExchange exchange) {
+        String tokenUrl = String.format("%s/realms/%s/protocol/openid-connect/token", keycloakUrl, realm);
+
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        formData.add("grant_type", "authorization_code");
+        formData.add("client_id", clientId);
+        formData.add("code", code);
+        formData.add("redirect_uri", "http://localhost:8080/api/auth/keycloak/callback");
+
+        return webClient.post()
+                .uri(tokenUrl)
+                .body(BodyInserters.fromFormData(formData))
+                .retrieve()
+                .bodyToMono(Map.class)
+                .flatMap(tokenResponse -> {
+                    String accessToken = (String) tokenResponse.get("access_token");
+                    if (accessToken == null) {
+                        exchange.getResponse().setStatusCode(HttpStatus.FOUND);
+                        exchange.getResponse().getHeaders().setLocation(java.net.URI.create("http://localhost:5173/login?error=oauth_failed"));
+                        return exchange.getResponse().setComplete();
+                    }
+
+                    String sessionId = UUID.randomUUID().toString();
+                    Map<String, Object> claims = parseJwtClaims(accessToken);
+                    String username = (String) claims.getOrDefault("username", "user");
+
+                    return redisTemplate.opsForValue()
+                            .set("session:" + sessionId, accessToken, Duration.ofHours(24))
+                            .flatMap(saved -> {
+                                ResponseCookie cookie = ResponseCookie.from("SESSIONID", sessionId)
+                                        .httpOnly(true)
+                                        .path("/")
+                                        .maxAge(Duration.ofHours(24))
+                                        .sameSite("Lax")
+                                        .build();
+                                exchange.getResponse().addCookie(cookie);
+                                exchange.getResponse().setStatusCode(HttpStatus.FOUND);
+                                String redirect = String.format("http://localhost:5173/workspaces?token=%s&username=%s", accessToken, username);
+                                exchange.getResponse().getHeaders().setLocation(java.net.URI.create(redirect));
+                                return exchange.getResponse().setComplete();
+                            });
+                })
+                .onErrorResume(e -> {
+                    exchange.getResponse().setStatusCode(HttpStatus.FOUND);
+                    exchange.getResponse().getHeaders().setLocation(java.net.URI.create("http://localhost:5173/login?error=" + e.getMessage()));
+                    return exchange.getResponse().setComplete();
                 });
     }
 
@@ -163,6 +251,7 @@ public class AuthController {
         exchange.getResponse().addCookie(clearCookie);
 
         Map<String, Object> res = Map.of("message", "Logged out successfully");
+
         if (cookie != null) {
             return redisTemplate.opsForValue().delete("session:" + cookie.getValue())
                     .map(deleted -> ResponseEntity.ok(res));
@@ -231,11 +320,144 @@ public class AuthController {
         }
 
         return redisTemplate.opsForValue().get("session:" + sessionKey)
-                .map(jwt -> {
+                .flatMap(jwt -> {
                     Map<String, Object> me = parseJwtClaims(jwt);
                     me.put("session", currentSession);
-                    return ResponseEntity.ok(me);
+                    String username = (String) me.get("username");
+                    return redisTemplate.opsForValue().get("profile:" + username)
+                            .map(profileJson -> {
+                                try {
+                                    Map<String, Object> cachedProfile = objectMapper.readValue(profileJson, Map.class);
+                                    me.putAll(cachedProfile);
+                                    if (cachedProfile.containsKey("firstName") || cachedProfile.containsKey("lastName")) {
+                                        String fn = (String) cachedProfile.getOrDefault("firstName", me.get("firstName"));
+                                        String ln = (String) cachedProfile.getOrDefault("lastName", me.get("lastName"));
+                                        me.put("name", ((fn != null ? fn : "") + " " + (ln != null ? ln : "")).trim());
+                                    }
+                                } catch (Exception ignored) {}
+                                return ResponseEntity.ok(me);
+                            })
+                            .defaultIfEmpty(ResponseEntity.ok(me));
                 })
                 .defaultIfEmpty(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(expired));
     }
+
+    @PutMapping("/update")
+    public Mono<ResponseEntity<Map<String, Object>>> updateProfile(
+            @RequestBody Map<String, Object> updateReq,
+            ServerWebExchange exchange) {
+
+        String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+        String sessionKey = null;
+
+        HttpCookie cookie = exchange.getRequest().getCookies().getFirst("SESSIONID");
+        if (cookie != null && !cookie.getValue().isEmpty()) {
+            sessionKey = cookie.getValue();
+        } else if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            sessionKey = authHeader.substring(7).trim();
+        }
+
+        if (sessionKey == null || sessionKey.isEmpty()) {
+            Map<String, Object> err = new HashMap<>();
+            err.put("error", "Not authenticated");
+            return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(err));
+        }
+
+        Mono<String> jwtMono;
+        if (sessionKey.contains(".")) {
+            jwtMono = Mono.just(sessionKey);
+        } else {
+            jwtMono = redisTemplate.opsForValue().get("session:" + sessionKey);
+        }
+
+        Map<String, Object> expired = new HashMap<>();
+        expired.put("error", "Session expired or invalid");
+
+        return jwtMono.flatMap(jwt -> {
+            Map<String, Object> claims = parseJwtClaims(jwt);
+            String username = (String) claims.get("username");
+            if (username == null) {
+                Map<String, Object> invalid = new HashMap<>();
+                invalid.put("error", "Invalid user");
+                return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(invalid));
+            }
+
+            String firstName = (String) updateReq.getOrDefault("firstName", claims.get("firstName"));
+            String lastName = (String) updateReq.getOrDefault("lastName", claims.get("lastName"));
+            String email = (String) updateReq.getOrDefault("email", claims.get("email"));
+            String profilePicture = (String) updateReq.get("profilePicture");
+
+            Map<String, Object> profileData = new HashMap<>();
+            if (firstName != null) profileData.put("firstName", firstName);
+            if (lastName != null) profileData.put("lastName", lastName);
+            if (email != null) profileData.put("email", email);
+            if (profilePicture != null) profileData.put("profilePicture", profilePicture);
+            profileData.put("name", ((firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "")).trim());
+            profileData.put("username", username);
+
+            String profileJson;
+            try {
+                profileJson = objectMapper.writeValueAsString(profileData);
+            } catch (Exception e) {
+                profileJson = "{}";
+            }
+
+            final String savedProfileJson = profileJson;
+
+            // Try updating Keycloak in background/best-effort
+            String adminTokenUrl = String.format("%s/realms/master/protocol/openid-connect/token", keycloakUrl);
+            MultiValueMap<String, String> adminCreds = new LinkedMultiValueMap<>();
+            adminCreds.add("grant_type", "password");
+            adminCreds.add("client_id", "admin-cli");
+            adminCreds.add("username", "admin");
+            adminCreds.add("password", "admin");
+
+            Mono<Void> keycloakUpdateMono = webClient.post()
+                    .uri(adminTokenUrl)
+                    .body(BodyInserters.fromFormData(adminCreds))
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .flatMap(adminRes -> {
+                        String adminJwt = (String) adminRes.get("access_token");
+                        String searchUserUrl = String.format("%s/admin/realms/%s/users?username=%s&exact=true", keycloakUrl, realm, username);
+
+                        return webClient.get()
+                                .uri(searchUserUrl)
+                                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwt)
+                                .retrieve()
+                                .bodyToFlux(Map.class)
+                                .next()
+                                .flatMap(userObj -> {
+                                    String keycloakUserId = (String) userObj.get("id");
+                                    String updateUserUrl = String.format("%s/admin/realms/%s/users/%s", keycloakUrl, realm, keycloakUserId);
+
+                                    Map<String, Object> kcPayload = new HashMap<>();
+                                    if (firstName != null) kcPayload.put("firstName", firstName);
+                                    if (lastName != null) kcPayload.put("lastName", lastName);
+                                    if (email != null) kcPayload.put("email", email);
+
+                                    return webClient.put()
+                                            .uri(updateUserUrl)
+                                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwt)
+                                            .bodyValue(kcPayload)
+                                            .retrieve()
+                                            .toBodilessEntity()
+                                            .then();
+                                });
+                    })
+                    .onErrorResume(e -> Mono.empty()); // If Keycloak sync fails, continue with Redis cache
+
+            return keycloakUpdateMono.then(
+                    redisTemplate.opsForValue().set("profile:" + username, savedProfileJson)
+                            .map(saved -> {
+                                Map<String, Object> resp = new HashMap<>();
+                                resp.put("status", "success");
+                                resp.put("message", "Profile updated successfully");
+                                resp.put("user", profileData);
+                                return ResponseEntity.ok(resp);
+                            })
+            );
+        }).defaultIfEmpty(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(expired));
+    }
 }
+

@@ -35,14 +35,14 @@ const ProfileMenu = () => {
       if (claims) {
         return {
           username: claims.preferred_username || claims.sub || "user",
-          email: claims.email || `${claims.preferred_username || "user"}@simplynotes.io`,
+          email: claims.email || `${claims.preferred_username || "user"}@triage.io`,
           firstName: claims.given_name || claims.name || claims.preferred_username || "User",
           lastName: claims.family_name || "",
         };
       }
       const storedUser = localStorage.getItem("username");
       if (storedUser) {
-        return { username: storedUser, email: `${storedUser}@simplynotes.io`, firstName: storedUser };
+        return { username: storedUser, email: `${storedUser}@triage.io`, firstName: storedUser };
       }
     } catch (e) {}
     return null;
@@ -65,7 +65,7 @@ const ProfileMenu = () => {
         if (claims) {
           const u = {
             username: claims.preferred_username || claims.sub,
-            email: claims.email || `${claims.preferred_username || "user"}@simplynotes.io`,
+            email: claims.email || `${claims.preferred_username || "user"}@triage.io`,
             firstName: claims.given_name || claims.name || claims.preferred_username,
             lastName: claims.family_name || "",
           };
@@ -79,7 +79,7 @@ const ProfileMenu = () => {
       if (claims) {
         setUser({
           username: claims.preferred_username || claims.sub,
-          email: claims.email || `${claims.preferred_username || "user"}@simplynotes.io`,
+          email: claims.email || `${claims.preferred_username || "user"}@triage.io`,
           firstName: claims.given_name || claims.name || claims.preferred_username,
           lastName: claims.family_name || "",
         });
@@ -107,7 +107,7 @@ const ProfileMenu = () => {
     : user?.firstName 
     ? `${user.firstName} ${user.lastName || ""}`.trim() 
     : user?.username || "User";
-  const displayEmail = user?.email || (user?.username ? `${user.username}@simplynotes.io` : "user@simplynotes.io");
+  const displayEmail = user?.email || (user?.username ? `${user.username}@triage.io` : "user@triage.io");
   const seedName = user?.firstName || user?.username || "User";
 
   return (

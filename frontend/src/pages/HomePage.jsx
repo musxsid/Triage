@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
-import SimplyNotesMockup from "../components/ui/SimplyNotesMockup";
+import TriageMockup from "../components/ui/TriageMockup";
+import TriageLogo from "../components/ui/TriageLogo";
 import {
   FileText,
   Zap,
@@ -125,11 +126,11 @@ export default function HomePage() {
 
   const faqs = [
     {
-      q: "How does SimplyNotes differ from traditional note taking apps?",
-      a: "SimplyNotes is engineered around calm productivity. Instead of chaotic nested folders, it organizes your thoughts into a clean, chronological activity feed with flexible project boards, frosted glass surfaces, and built-in Spark AI for immediate synthesis."
+      q: "How does Triage differ from traditional note taking apps?",
+      a: "Triage is engineered around calm productivity. Instead of chaotic nested folders, it organizes your thoughts into a clean, chronological activity feed with flexible project boards, frosted glass surfaces, and built-in Spark AI for immediate synthesis."
     },
     {
-      q: "Can I use SimplyNotes completely free?",
+      q: "Can I use Triage completely free?",
       a: "Yes! The Starter tier is 100% free forever with unlimited notes, workspaces, and full light/dark mode support. No credit card is required to get started."
     },
     {
@@ -142,7 +143,7 @@ export default function HomePage() {
     },
     {
       q: "Can I access my notes on mobile devices?",
-      a: "Yes. SimplyNotes is fully responsive with liquid glass mobile views, slide-out drawers, and adaptive touch-friendly action controls."
+      a: "Yes. Triage is fully responsive with liquid glass mobile views, slide-out drawers, and adaptive touch-friendly action controls."
     }
   ];
 
@@ -183,17 +184,7 @@ export default function HomePage() {
             }}
             className="flex items-center gap-3 cursor-pointer group"
           >
-            <div className="w-9 h-9 rounded-xl btn-coral flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
-              <FileText size={18} className="text-white" />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className={`text-xl font-extrabold tracking-tight ${darkMode ? "text-white" : "text-text-primary"}`}>
-                SimplyNotes
-              </span>
-              <span className="text-[10px] font-bold text-accent dark:text-[#FFA278] bg-accent/15 dark:bg-accent/25 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                Beta
-              </span>
-            </div>
+            <TriageLogo size={36} showWordmark={true} betaTag={true} />
           </div>
 
           {/* Desktop Navigation Links (Smooth Scroll without Losing Navbar) */}
@@ -395,7 +386,7 @@ export default function HomePage() {
                   <div className="w-3 h-3 rounded-full bg-yellow-400/80" />
                   <div className="w-3 h-3 rounded-full bg-green-400/80" />
                   <span className="ml-3 text-xs font-mono text-text-secondary dark:text-[#D6CBC4] opacity-70 hidden sm:inline">
-                    simplynotes.app — Live Workflow Demonstration
+                    triage.app — Live Workflow Demonstration
                   </span>
                 </div>
 
@@ -424,9 +415,9 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Native SimplyNotes Automated Video Mockup */}
+              {/* Native Triage Automated Video Mockup */}
               <div className="relative w-full overflow-hidden">
-                <SimplyNotesMockup darkMode={darkMode} activeTab={activeTab} />
+                <TriageMockup darkMode={darkMode} activeTab={activeTab} />
               </div>
             </div>
           </div>
@@ -600,7 +591,7 @@ export default function HomePage() {
             Adapts to whatever you create.
           </h2>
           <p className="text-base text-text-secondary dark:text-[#D6CBC4] max-w-xl mx-auto mt-3">
-            Switch between use cases to see how SimplyNotes formats notes, code, reflections, and roadmaps.
+            Switch between use cases to see how Triage formats notes, code, reflections, and roadmaps.
           </p>
         </div>
 
@@ -702,13 +693,13 @@ export default function HomePage() {
             transition={{ duration: 0.6 }}
           >
             <span className="text-xs font-bold text-accent dark:text-[#FFA278] uppercase tracking-widest bg-accent/10 dark:bg-accent/25 px-3 py-1 rounded-full">
-              The SimplyNotes Philosophy
+              The Triage Philosophy
             </span>
             <h2 className={`text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mt-4 mb-6 ${darkMode ? "text-white" : "text-text-primary"}`}>
               Built for depth in a world of endless noise.
             </h2>
             <p className="text-base leading-relaxed text-text-secondary dark:text-[#D6CBC4] mb-4">
-              Modern note apps have become overwhelming databases of widgets, complex databases, and constant alerts. We built SimplyNotes on a different thesis: <em>your ideas deserve peace</em>.
+              Modern note apps have become overwhelming databases of widgets, complex databases, and constant alerts. We built Triage on a different thesis: <em>your ideas deserve peace</em>.
             </p>
             <p className="text-base leading-relaxed text-text-secondary dark:text-[#D6CBC4] mb-8">
               Our <strong>Liquid Glass design system</strong> simulates physical frosted glass—offering depth and ambient light refraction without distracting clutter. Notes appear in an organic timeline feed, just like your daily stream of consciousness.
@@ -972,7 +963,7 @@ export default function HomePage() {
             Frequently Asked Questions
           </h2>
           <p className="text-base text-text-secondary dark:text-[#D6CBC4] max-w-md mx-auto mt-3">
-            Everything you need to know about SimplyNotes and the Liquid Glass architecture.
+            Everything you need to know about Triage and the Liquid Glass architecture.
           </p>
         </div>
 
@@ -1039,7 +1030,7 @@ export default function HomePage() {
               Start writing with clarity today.
             </h2>
             <p className="text-base text-text-secondary dark:text-[#D6CBC4] mb-8 max-w-lg mx-auto leading-relaxed">
-              Join thousands organizing their ideas in SimplyNotes. Free forever for your personal notes and ideas.
+              Join thousands organizing their ideas in Triage. Free forever for your personal notes and ideas.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <motion.button
@@ -1067,10 +1058,7 @@ export default function HomePage() {
       <footer className="border-t border-white/20 dark:border-white/10 py-12 px-6 text-center text-xs font-medium text-text-secondary dark:text-[#D6CBC4]">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg btn-coral flex items-center justify-center text-white text-xs font-bold">
-              SN
-            </div>
-            <span className="font-bold text-sm text-text-primary dark:text-white">SimplyNotes</span>
+            <TriageLogo size={24} showWordmark={true} />
             <span className="opacity-60">— All rights reserved © 2026.</span>
           </div>
 

@@ -13,6 +13,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @RestController
@@ -30,6 +32,22 @@ public class GoogleAuthController {
     public GoogleAuthController(GmailService gmailService, UserSyncService userSyncService) {
         this.gmailService = gmailService;
         this.userSyncService = userSyncService;
+    }
+
+    @GetMapping("/login")
+    public ResponseEntity<Void> googleLogin() {
+        try {
+            URI uri = gmailService.generateLoginUri();
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(uri)
+                    .build();
+        } catch (Exception e) {
+            log.error("Failed to generate Google login URL: {}", e.getMessage(), e);
+            String err = e.getMessage() != null ? e.getMessage() : "Failed to initiate Google login";
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create(frontendUrl + "/login?error=" + URLEncoder.encode(err, StandardCharsets.UTF_8)))
+                    .build();
+        }
     }
 
     @GetMapping("/gmail")
@@ -57,8 +75,9 @@ public class GoogleAuthController {
 
         if (error != null) {
             log.warn("Google OAuth callback returned error: {}", error);
+            String target = (state != null && state.startsWith("login")) ? "/login?error=" : "/email?error=";
             return ResponseEntity.status(HttpStatus.FOUND)
-                    .location(URI.create(frontendUrl + "/email?error=" + error))
+                    .location(URI.create(frontendUrl + target + URLEncoder.encode(error, StandardCharsets.UTF_8)))
                     .build();
         }
 
@@ -66,15 +85,55 @@ public class GoogleAuthController {
             return ResponseEntity.badRequest().body(Map.of("error", "Missing code or state parameter"));
         }
 
+        if ("login".equals(state) || state.startsWith("login")) {
+            try {
+                Map<String, String> authResult = gmailService.handleOAuthLoginCallback(code);
+                StringBuilder redirect = new StringBuilder(frontendUrl).append("/workspaces?");
+                redirect.append("token=").append(URLEncoder.encode(authResult.get("token"), StandardCharsets.UTF_8));
+                redirect.append("&username=").append(URLEncoder.encode(authResult.get("username"), StandardCharsets.UTF_8));
+                if (authResult.get("name") != null) {
+                    redirect.append("&name=").append(URLEncoder.encode(authResult.get("name"), StandardCharsets.UTF_8));
+                }
+                if (authResult.get("email") != null) {
+                    redirect.append("&email=").append(URLEncoder.encode(authResult.get("email"), StandardCharsets.UTF_8));
+                }
+                if (authResult.get("picture") != null) {
+                    redirect.append("&picture=").append(URLEncoder.encode(authResult.get("picture"), StandardCharsets.UTF_8));
+                }
+                return ResponseEntity.status(HttpStatus.FOUND)
+                        .location(URI.create(redirect.toString()))
+                        .build();
+            } catch (Exception e) {
+                log.error("Error in Google login callback: {}", e.getMessage(), e);
+                String err = e.getMessage() != null ? e.getMessage() : "Login failed";
+                return ResponseEntity.status(HttpStatus.FOUND)
+                        .location(URI.create(frontendUrl + "/login?error=" + URLEncoder.encode(err, StandardCharsets.UTF_8)))
+                        .build();
+            }
+        }
+
         try {
-            gmailService.handleOAuthCallback(code, state);
+            Map<String, String> syncDetails = gmailService.handleOAuthCallback(code, state);
+            StringBuilder redirect = new StringBuilder(frontendUrl).append("/email?connected=true");
+            if (syncDetails != null) {
+                if (syncDetails.get("picture") != null) {
+                    redirect.append("&picture=").append(URLEncoder.encode(syncDetails.get("picture"), StandardCharsets.UTF_8));
+                }
+                if (syncDetails.get("name") != null) {
+                    redirect.append("&name=").append(URLEncoder.encode(syncDetails.get("name"), StandardCharsets.UTF_8));
+                }
+                if (syncDetails.get("email") != null) {
+                    redirect.append("&email=").append(URLEncoder.encode(syncDetails.get("email"), StandardCharsets.UTF_8));
+                }
+            }
             return ResponseEntity.status(HttpStatus.FOUND)
-                    .location(URI.create(frontendUrl + "/email?connected=true"))
+                    .location(URI.create(redirect.toString()))
                     .build();
         } catch (Exception e) {
             log.error("Error exchanging OAuth callback token: {}", e.getMessage(), e);
+            String err = e.getMessage() != null ? e.getMessage() : "Failed to connect Gmail";
             return ResponseEntity.status(HttpStatus.FOUND)
-                    .location(URI.create(frontendUrl + "/email?error=" + e.getMessage()))
+                    .location(URI.create(frontendUrl + "/email?error=" + URLEncoder.encode(err, StandardCharsets.UTF_8)))
                     .build();
         }
     }

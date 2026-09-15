@@ -1,11 +1,16 @@
-# backend
+# Environment Variables
+.env
+.env.local
+.env.*.local
+*.backup
+
+# Backend
 backend/target/
+backend/**/target/
 
-# frontend
+# Frontend
 frontend/node_modules/
+frontend/dist/
 
-# env
-.envgit
-
-# logs
+# Logs
 *.log

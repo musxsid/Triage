@@ -17,6 +17,9 @@ public class FileUploadController {
     @Value("${upload.dir:uploads/}")
     private String uploadDir;
 
+    @Value("${app.gateway-url:http://localhost:8080}")
+    private String gatewayUrl;
+
     @PostMapping("/image")
     public ResponseEntity<?> uploadImage(@RequestParam("file") MultipartFile file) {
         try {
@@ -34,10 +37,7 @@ public class FileUploadController {
             Path filePath = uploadPath.resolve(newFilename);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            String fileUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
-                    .path("/uploads/")
-                    .path(newFilename)
-                    .toUriString();
+            String fileUrl = gatewayUrl + "/uploads/" + newFilename;
 
             return ResponseEntity.ok(Map.of("url", fileUrl));
 

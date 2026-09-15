@@ -23,6 +23,15 @@ public class RedisSessionFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
+        String path = request.getURI().getPath();
+
+        // Bypass session injection on public auth routes and strip any stale authorization
+        if (path.startsWith("/api/auth/google/login") || path.startsWith("/api/auth/google/callback") || path.startsWith("/api/notes/public/")) {
+            ServerHttpRequest cleanRequest = request.mutate()
+                    .headers(h -> h.remove(HttpHeaders.AUTHORIZATION))
+                    .build();
+            return chain.filter(exchange.mutate().request(cleanRequest).build());
+        }
 
         String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 

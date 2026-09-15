@@ -179,67 +179,6 @@ public class AuthController {
                 });
     }
 
-    @GetMapping("/google/login")
-    public Mono<Void> googleLogin(ServerWebExchange exchange) {
-        String authUrl = String.format(
-                "%s/realms/%s/protocol/openid-connect/auth?client_id=%s&response_type=code&scope=openid%%20profile%%20email&redirect_uri=%s&kc_idp_hint=google",
-                "http://localhost:8081", realm, clientId, "http://localhost:8080/api/auth/keycloak/callback"
-        );
-        exchange.getResponse().setStatusCode(HttpStatus.FOUND);
-        exchange.getResponse().getHeaders().setLocation(java.net.URI.create(authUrl));
-        return exchange.getResponse().setComplete();
-    }
-
-    @GetMapping("/keycloak/callback")
-    public Mono<Void> keycloakCallback(@RequestParam("code") String code, ServerWebExchange exchange) {
-        String tokenUrl = String.format("%s/realms/%s/protocol/openid-connect/token", keycloakUrl, realm);
-
-        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("grant_type", "authorization_code");
-        formData.add("client_id", clientId);
-        formData.add("code", code);
-        formData.add("redirect_uri", "http://localhost:8080/api/auth/keycloak/callback");
-
-        return webClient.post()
-                .uri(tokenUrl)
-                .body(BodyInserters.fromFormData(formData))
-                .retrieve()
-                .bodyToMono(Map.class)
-                .flatMap(tokenResponse -> {
-                    String accessToken = (String) tokenResponse.get("access_token");
-                    if (accessToken == null) {
-                        exchange.getResponse().setStatusCode(HttpStatus.FOUND);
-                        exchange.getResponse().getHeaders().setLocation(java.net.URI.create("http://localhost:5173/login?error=oauth_failed"));
-                        return exchange.getResponse().setComplete();
-                    }
-
-                    String sessionId = UUID.randomUUID().toString();
-                    Map<String, Object> claims = parseJwtClaims(accessToken);
-                    String username = (String) claims.getOrDefault("username", "user");
-
-                    return redisTemplate.opsForValue()
-                            .set("session:" + sessionId, accessToken, Duration.ofHours(24))
-                            .flatMap(saved -> {
-                                ResponseCookie cookie = ResponseCookie.from("SESSIONID", sessionId)
-                                        .httpOnly(true)
-                                        .path("/")
-                                        .maxAge(Duration.ofHours(24))
-                                        .sameSite("Lax")
-                                        .build();
-                                exchange.getResponse().addCookie(cookie);
-                                exchange.getResponse().setStatusCode(HttpStatus.FOUND);
-                                String redirect = String.format("http://localhost:5173/workspaces?token=%s&username=%s", accessToken, username);
-                                exchange.getResponse().getHeaders().setLocation(java.net.URI.create(redirect));
-                                return exchange.getResponse().setComplete();
-                            });
-                })
-                .onErrorResume(e -> {
-                    exchange.getResponse().setStatusCode(HttpStatus.FOUND);
-                    exchange.getResponse().getHeaders().setLocation(java.net.URI.create("http://localhost:5173/login?error=" + e.getMessage()));
-                    return exchange.getResponse().setComplete();
-                });
-    }
-
     @PostMapping("/logout")
     public Mono<ResponseEntity<Map<String, Object>>> logout(ServerWebExchange exchange) {
         HttpCookie cookie = exchange.getRequest().getCookies().getFirst("SESSIONID");
@@ -316,7 +255,21 @@ public class AuthController {
         if (sessionKey.contains(".")) {
             Map<String, Object> me = parseJwtClaims(sessionKey);
             me.put("session", currentSession);
-            return Mono.just(ResponseEntity.ok(me));
+            String username = (String) me.get("username");
+            return redisTemplate.opsForValue().get("profile:" + username)
+                    .map(profileJson -> {
+                        try {
+                            Map<String, Object> cachedProfile = objectMapper.readValue(profileJson, Map.class);
+                            me.putAll(cachedProfile);
+                            if (cachedProfile.containsKey("firstName") || cachedProfile.containsKey("lastName")) {
+                                String fn = (String) cachedProfile.getOrDefault("firstName", me.get("firstName"));
+                                String ln = (String) cachedProfile.getOrDefault("lastName", me.get("lastName"));
+                                me.put("name", ((fn != null ? fn : "") + " " + (ln != null ? ln : "")).trim());
+                            }
+                        } catch (Exception ignored) {}
+                        return ResponseEntity.ok(me);
+                    })
+                    .defaultIfEmpty(ResponseEntity.ok(me));
         }
 
         return redisTemplate.opsForValue().get("session:" + sessionKey)

@@ -66,6 +66,19 @@ const EditProfileModal = ({ open, onClose, userData, onUpdated }) => {
       await axios.put("http://localhost:8080/api/auth/update", formData, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       });
+      const stored = localStorage.getItem("user");
+      const current = stored ? JSON.parse(stored) : {};
+      const updatedUser = {
+        ...current,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        name: `${formData.firstName || ""} ${formData.lastName || ""}`.trim(),
+        email: formData.email,
+        profilePicture: formData.profilePicture
+      };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new CustomEvent("user-profile-updated", { detail: updatedUser }));
       toast.success("Profile updated successfully!");
       if (onUpdated) onUpdated(); // Refresh data in the menu
       onClose();
@@ -100,6 +113,7 @@ const EditProfileModal = ({ open, onClose, userData, onUpdated }) => {
                   <img 
                     src={currentAvatar} 
                     alt="Avatar" 
+                    referrerPolicy="no-referrer"
                     className="w-full h-full object-cover group-hover:opacity-75 transition"
                   />
                 )}
@@ -116,11 +130,26 @@ const EditProfileModal = ({ open, onClose, userData, onUpdated }) => {
               />
             </div>
             
-            <div className="text-right">
+            <div className="text-right flex flex-col items-end gap-1.5">
               <span className="text-xs font-semibold px-3 py-1 rounded-full bg-accent/10 text-accent dark:text-accent-dark">
                 Active Member
               </span>
-              <p className="text-xs text-text-secondary mt-2">Personal Workspace</p>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current.click()}
+                className="text-xs font-bold text-accent hover:underline flex items-center gap-1 mt-1"
+              >
+                <Camera size={13} /> Change photo
+              </button>
+              {formData.profilePicture && (
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, profilePicture: "" }))}
+                  className="text-[11px] text-text-secondary hover:text-red-500 transition"
+                >
+                  Reset to default
+                </button>
+              )}
             </div>
           </div>
 

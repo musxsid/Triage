@@ -19,6 +19,8 @@ public class User {
     private String firstName;
     private String lastName;
     private String email;
+    @Column(columnDefinition = "TEXT")
+    private String profilePicture;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonIgnore
@@ -38,6 +40,7 @@ public class User {
     public String getFirstName() { return firstName; }
     public String getLastName() { return lastName; }
     public String getEmail() { return email; }
+    public String getProfilePicture() { return profilePicture; }
     public List<Workspace> getWorkspaces() { return workspaces; }
     public List<Note> getNotes() { return notes; }
     public List<Folder> getFolders() { return folders; }
@@ -48,6 +51,7 @@ public class User {
     public void setFirstName(String firstName) { this.firstName = firstName; }
     public void setLastName(String lastName) { this.lastName = lastName; }
     public void setEmail(String email) { this.email = email; }
+    public void setProfilePicture(String profilePicture) { this.profilePicture = profilePicture; }
     public void setWorkspaces(List<Workspace> workspaces) { this.workspaces = workspaces; }
     public void setNotes(List<Note> notes) { this.notes = notes; }
     public void setFolders(List<Folder> folders) { this.folders = folders; }

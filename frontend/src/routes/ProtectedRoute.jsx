@@ -6,14 +6,40 @@ function ProtectedRoute({ children }) {
   if (queryToken) {
     localStorage.setItem("token", queryToken);
     const queryUsername = params.get("username");
+    const queryName = params.get("name");
+    const queryEmail = params.get("email");
+    const queryPicture = params.get("picture");
+
     if (queryUsername) {
       localStorage.setItem("username", queryUsername);
-      localStorage.setItem("user", JSON.stringify({
+      const userData = {
         username: queryUsername,
-        email: `${queryUsername}@triage.io`,
-        firstName: queryUsername
-      }));
+        name: queryName || queryUsername,
+        email: queryEmail || `${queryUsername}@triage.io`,
+        firstName: queryName ? queryName.split(" ")[0] : queryUsername,
+        lastName: queryName && queryName.includes(" ") ? queryName.substring(queryName.indexOf(" ") + 1) : "",
+        profilePicture: queryPicture || null
+      };
+      localStorage.setItem("user", JSON.stringify(userData));
+
+      if (queryPicture || queryName) {
+        fetch("http://localhost:8080/api/auth/update", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${queryToken}`
+          },
+          body: JSON.stringify({
+            name: userData.name,
+            email: userData.email,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            profilePicture: userData.profilePicture
+          })
+        }).catch(() => {});
+      }
     }
+    window.history.replaceState({}, document.title, window.location.pathname);
   }
 
   const token = localStorage.getItem("token");

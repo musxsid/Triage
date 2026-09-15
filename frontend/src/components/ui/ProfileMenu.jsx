@@ -89,6 +89,18 @@ const ProfileMenu = () => {
 
   useEffect(() => {
     fetchUser();
+    const handleProfileUpdate = () => {
+      try {
+        const stored = localStorage.getItem("user");
+        if (stored) setUser(JSON.parse(stored));
+      } catch (e) {}
+    };
+    window.addEventListener("storage", handleProfileUpdate);
+    window.addEventListener("user-profile-updated", handleProfileUpdate);
+    return () => {
+      window.removeEventListener("storage", handleProfileUpdate);
+      window.removeEventListener("user-profile-updated", handleProfileUpdate);
+    };
   }, []);
 
   useEffect(() => {
@@ -109,17 +121,24 @@ const ProfileMenu = () => {
     : user?.username || "User";
   const displayEmail = user?.email || (user?.username ? `${user.username}@triage.io` : "user@triage.io");
   const seedName = user?.firstName || user?.username || "User";
+  const defaultAvatar = `https://api.dicebear.com/7.x/notionists/svg?seed=${seedName}&backgroundColor=transparent`;
+  const avatarUrl = user?.profilePicture || user?.picture || defaultAvatar;
 
   return (
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-10 h-10 rounded-full border-2 border-accent/30 hover:border-accent/60 transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-accent/30 glass overflow-hidden"
+        className="w-10 h-10 rounded-full border-2 border-accent/30 hover:border-accent/60 transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-accent/30 glass overflow-hidden flex items-center justify-center"
       >
         <img 
-          src={`https://api.dicebear.com/7.x/notionists/svg?seed=${seedName}&backgroundColor=transparent`} 
+          src={avatarUrl} 
           alt="Profile" 
+          referrerPolicy="no-referrer"
           className="w-full h-full object-cover"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = defaultAvatar;
+          }}
         />
       </button>
 
@@ -130,11 +149,25 @@ const ProfileMenu = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 mt-3 w-56 glass rounded-2xl shadow-2xl p-2 z-50 origin-top-right"
+            className="absolute right-0 mt-3 w-60 glass rounded-2xl shadow-2xl p-2 z-50 origin-top-right"
           >
-            <div className="px-3 py-2 mb-1 border-b border-white/15 dark:border-white/8">
-              <p className="text-[13px] font-bold text-text-primary dark:text-text-darkPrimary truncate">{displayName}</p>
-              <p className="text-[11px] text-text-secondary truncate">{displayEmail}</p>
+            <div className="px-3 py-2.5 mb-1 border-b border-white/15 dark:border-white/8 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full border border-accent/30 overflow-hidden flex-shrink-0">
+                <img 
+                  src={avatarUrl} 
+                  alt="Avatar" 
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = defaultAvatar;
+                  }}
+                />
+              </div>
+              <div className="overflow-hidden">
+                <p className="text-[13px] font-bold text-text-primary dark:text-text-darkPrimary truncate">{displayName}</p>
+                <p className="text-[11px] text-text-secondary truncate">{displayEmail}</p>
+              </div>
             </div>
             
             <button

@@ -335,7 +335,11 @@ function SignupPage() {
             type="button"
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
-            onClick={() => window.location.href = "http://localhost:8080/api/auth/google/login"}
+            onClick={() => {
+              localStorage.removeItem("token");
+              localStorage.removeItem("activeWorkspaceId");
+              window.location.href = "http://localhost:8080/api/auth/google/login";
+            }}
             className="w-full py-3 rounded-xl border border-white/40 dark:border-white/10 glass hover:bg-white/40 dark:hover:bg-white/10 text-text-primary dark:text-text-darkPrimary font-bold text-sm shadow-sm transition-all flex items-center justify-center gap-3 mb-5"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">

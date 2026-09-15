@@ -16,6 +16,16 @@ services:
       timeout: 5s
       retries: 5
 
+  mongodb:
+    image: mongo:7.0
+    container_name: simplynotes-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: simplynotes_cache
+    volumes:
+      - mongo_data:/data/db
+
   redis:
     image: redis:7-alpine
     container_name: simplynotes-redis
@@ -138,3 +148,4 @@ services:
 volumes:
   postgres_data:
   uploads_data:
+  mongo_data:

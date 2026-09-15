@@ -22,6 +22,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.ByteArrayOutputStream;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -48,16 +49,57 @@ public class GmailService {
     @Value("${app.frontend-url:http://localhost:5173}")
     private String frontendUrl;
 
+    @Value("${keycloak.url:http://keycloak:8080}")
+    private String keycloakUrl;
+
+    @Value("${keycloak.realm:simplynotes}")
+    private String realm;
+
+    @Value("${keycloak.client-id:simplynotes-app}")
+    private String keycloakClientId;
+
+    private static final String GOOGLE_AUTH_PASSWORD = "SimplyNotesGoogleAuth2026!";
+
     private final OAuthCredentialRepository credentialRepository;
     private final UserRepository userRepository;
+    private final UserSyncService userSyncService;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
-    public GmailService(OAuthCredentialRepository credentialRepository, UserRepository userRepository) {
+    public GmailService(OAuthCredentialRepository credentialRepository, UserRepository userRepository, UserSyncService userSyncService) {
         this.credentialRepository = credentialRepository;
         this.userRepository = userRepository;
+        this.userSyncService = userSyncService;
         this.restTemplate = new RestTemplate();
         this.objectMapper = new ObjectMapper();
+    }
+
+    public URI generateLoginUri() {
+        if (clientId == null || clientId.trim().isEmpty()) {
+            throw new IllegalStateException("Google OAuth Client ID is not configured. Please set GOOGLE_CLIENT_ID in your .env file.");
+        }
+
+        String scopes = String.join(" ",
+                "openid",
+                "profile",
+                "email"
+        );
+
+        return UriComponentsBuilder.fromHttpUrl("https://accounts.google.com/o/oauth2/v2/auth")
+                .queryParam("client_id", clientId)
+                .queryParam("redirect_uri", redirectUri)
+                .queryParam("response_type", "code")
+                .queryParam("scope", scopes)
+                .queryParam("access_type", "offline")
+                .queryParam("prompt", "consent")
+                .queryParam("state", "login")
+                .encode(StandardCharsets.UTF_8)
+                .build()
+                .toUri();
+    }
+
+    public String generateLoginUrl() {
+        return generateLoginUri().toString();
     }
 
     public String generateAuthUrl(String username) {
@@ -80,11 +122,12 @@ public class GmailService {
                 .queryParam("access_type", "offline")
                 .queryParam("prompt", "consent")
                 .queryParam("state", username)
+                .encode(StandardCharsets.UTF_8)
                 .build()
                 .toUriString();
     }
 
-    public void handleOAuthCallback(String code, String username) {
+    public Map<String, String> handleOAuthCallback(String code, String username) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
@@ -108,8 +151,10 @@ public class GmailService {
         Integer expiresIn = (Integer) tokenBody.get("expires_in");
         String scope = (String) tokenBody.get("scope");
 
-        // Fetch user email from Google UserInfo
+        // Fetch user info from Google UserInfo
         String googleEmail = null;
+        String googlePicture = null;
+        String googleName = null;
         try {
             HttpHeaders userHeaders = new HttpHeaders();
             userHeaders.setBearerAuth(accessToken);
@@ -117,6 +162,8 @@ public class GmailService {
             ResponseEntity<Map> userResp = restTemplate.exchange("https://www.googleapis.com/oauth2/v2/userinfo", HttpMethod.GET, userReq, Map.class);
             if (userResp.getBody() != null) {
                 googleEmail = (String) userResp.getBody().get("email");
+                googlePicture = (String) userResp.getBody().get("picture");
+                googleName = (String) userResp.getBody().get("name");
             }
         } catch (Exception e) {
             log.warn("Could not fetch userinfo from Google: {}", e.getMessage());
@@ -124,6 +171,14 @@ public class GmailService {
 
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found: " + username));
+
+        if (googleEmail != null && (user.getEmail() == null || user.getEmail().isEmpty())) {
+            user.setEmail(googleEmail);
+        }
+        if (googlePicture != null) {
+            user.setProfilePicture(googlePicture);
+        }
+        userRepository.save(user);
 
         OAuthCredential credential = credentialRepository.findByUserAndProvider(user, "google")
                 .orElseGet(() -> {
@@ -144,6 +199,198 @@ public class GmailService {
         }
 
         credentialRepository.save(credential);
+
+        Map<String, String> details = new HashMap<>();
+        if (googleEmail != null) details.put("email", googleEmail);
+        if (googlePicture != null) details.put("picture", googlePicture);
+        if (googleName != null) details.put("name", googleName);
+        return details;
+    }
+
+    public Map<String, String> handleOAuthLoginCallback(String code) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("code", code);
+        params.add("client_id", clientId);
+        params.add("client_secret", clientSecret);
+        params.add("redirect_uri", redirectUri);
+        params.add("grant_type", "authorization_code");
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
+
+        ResponseEntity<Map> response = restTemplate.postForEntity("https://oauth2.googleapis.com/token", request, Map.class);
+        if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+            throw new RuntimeException("Failed to exchange authorization code with Google");
+        }
+
+        Map tokenBody = response.getBody();
+        String accessToken = (String) tokenBody.get("access_token");
+        String refreshToken = (String) tokenBody.get("refresh_token");
+        Integer expiresIn = (Integer) tokenBody.get("expires_in");
+        String scope = (String) tokenBody.get("scope");
+
+        // Fetch userinfo from Google
+        HttpHeaders userHeaders = new HttpHeaders();
+        userHeaders.setBearerAuth(accessToken);
+        HttpEntity<?> userReq = new HttpEntity<>(userHeaders);
+        ResponseEntity<Map> userResp = restTemplate.exchange("https://www.googleapis.com/oauth2/v2/userinfo", HttpMethod.GET, userReq, Map.class);
+        if (userResp.getBody() == null) {
+            throw new RuntimeException("Failed to fetch user profile from Google");
+        }
+
+        Map userInfo = userResp.getBody();
+        String email = (String) userInfo.get("email");
+        String givenName = (String) userInfo.get("given_name");
+        String familyName = (String) userInfo.get("family_name");
+        String name = (String) userInfo.get("name");
+
+        String picture = (String) userInfo.get("picture");
+
+        String firstName = (givenName != null && !givenName.trim().isEmpty()) ? givenName : ((name != null && !name.trim().isEmpty()) ? name : "User");
+        String lastName = (familyName != null && !familyName.trim().isEmpty()) ? familyName : firstName;
+
+        // Sync with Keycloak and obtain genuine Keycloak JWT token
+        String keycloakJwt = syncAndAuthenticateWithKeycloak(email, firstName, lastName);
+        String targetUsername = extractUsernameFromJwt(keycloakJwt);
+
+        // Sync with PostgreSQL User including profile picture
+        User dbUser = userSyncService.getOrCreateUserWithProfile(targetUsername, email, firstName, lastName, picture);
+
+        // Save OAuth credentials for live Gmail access if Gmail scopes were granted
+        if (scope != null && scope.contains("gmail")) {
+            OAuthCredential credential = credentialRepository.findByUserAndProvider(dbUser, "google")
+                    .orElseGet(() -> {
+                        OAuthCredential cred = new OAuthCredential();
+                        cred.setUser(dbUser);
+                        cred.setProvider("google");
+                        return cred;
+                    });
+
+            credential.setAccessToken(accessToken);
+            if (refreshToken != null && !refreshToken.isEmpty()) {
+                credential.setRefreshToken(refreshToken);
+            }
+            credential.setTokenExpiry(Instant.now().plusSeconds(expiresIn != null ? expiresIn : 3600));
+            credential.setScope(scope);
+            credential.setEmail(email);
+            credentialRepository.save(credential);
+        }
+
+        Map<String, String> authResult = new HashMap<>();
+        authResult.put("token", keycloakJwt);
+        authResult.put("username", targetUsername);
+        authResult.put("name", (name != null && !name.trim().isEmpty()) ? name : (firstName + " " + lastName).trim());
+        authResult.put("email", email);
+        if (picture != null && !picture.trim().isEmpty()) {
+            authResult.put("picture", picture);
+        }
+        return authResult;
+    }
+
+    private String syncAndAuthenticateWithKeycloak(String email, String firstName, String lastName) {
+        HttpHeaders formHeaders = new HttpHeaders();
+        formHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        // 1. Get Admin token
+        MultiValueMap<String, String> adminCreds = new LinkedMultiValueMap<>();
+        adminCreds.add("client_id", "admin-cli");
+        adminCreds.add("username", "admin");
+        adminCreds.add("password", "admin");
+        adminCreds.add("grant_type", "password");
+
+        HttpEntity<MultiValueMap<String, String>> adminReq = new HttpEntity<>(adminCreds, formHeaders);
+        String adminTokenUrl = String.format("%s/realms/master/protocol/openid-connect/token", keycloakUrl);
+        ResponseEntity<Map> adminRes = restTemplate.postForEntity(adminTokenUrl, adminReq, Map.class);
+        if (adminRes.getBody() == null || !adminRes.getBody().containsKey("access_token")) {
+            throw new RuntimeException("Failed to obtain Keycloak admin token");
+        }
+        String adminJwt = (String) adminRes.getBody().get("access_token");
+
+        // 2. Search for user by email in Keycloak
+        HttpHeaders authHeaders = new HttpHeaders();
+        authHeaders.setBearerAuth(adminJwt);
+        authHeaders.setContentType(MediaType.APPLICATION_JSON);
+
+        String searchEmailUrl = String.format("%s/admin/realms/%s/users?email=%s", keycloakUrl, realm, email);
+        ResponseEntity<List> userListRes = restTemplate.exchange(searchEmailUrl, HttpMethod.GET, new HttpEntity<>(authHeaders), List.class);
+
+        String username;
+        if (userListRes.getBody() != null && !userListRes.getBody().isEmpty()) {
+            Map existingUser = (Map) userListRes.getBody().get(0);
+            String userId = (String) existingUser.get("id");
+            username = (String) existingUser.get("username");
+
+            // Update user to ensure lastName and clear required actions
+            Map<String, Object> updateBody = new HashMap<>();
+            updateBody.put("firstName", firstName);
+            updateBody.put("lastName", lastName);
+            updateBody.put("email", email);
+            updateBody.put("enabled", true);
+            updateBody.put("emailVerified", true);
+            updateBody.put("requiredActions", Collections.emptyList());
+
+            String updateUserUrl = String.format("%s/admin/realms/%s/users/%s", keycloakUrl, realm, userId);
+            restTemplate.exchange(updateUserUrl, HttpMethod.PUT, new HttpEntity<>(updateBody, authHeaders), Void.class);
+
+            // Reset password to GOOGLE_AUTH_PASSWORD
+            Map<String, Object> resetBody = Map.of("type", "password", "value", GOOGLE_AUTH_PASSWORD, "temporary", false);
+            String resetUrl = String.format("%s/admin/realms/%s/users/%s/reset-password", keycloakUrl, realm, userId);
+            restTemplate.exchange(resetUrl, HttpMethod.PUT, new HttpEntity<>(resetBody, authHeaders), Void.class);
+        } else {
+            // Create user
+            username = email.split("@")[0].replaceAll("[^a-zA-Z0-9_-]", "");
+            Map<String, Object> createBody = new HashMap<>();
+            createBody.put("username", username);
+            createBody.put("email", email);
+            createBody.put("firstName", firstName);
+            createBody.put("lastName", lastName);
+            createBody.put("enabled", true);
+            createBody.put("emailVerified", true);
+            createBody.put("requiredActions", Collections.emptyList());
+            createBody.put("credentials", List.of(Map.of("type", "password", "value", GOOGLE_AUTH_PASSWORD, "temporary", false)));
+
+            String createUrl = String.format("%s/admin/realms/%s/users", keycloakUrl, realm);
+            try {
+                restTemplate.postForEntity(createUrl, new HttpEntity<>(createBody, authHeaders), Void.class);
+            } catch (Exception ex) {
+                // If username already taken with another email, append random suffix
+                username = username + "_" + (int)(Math.random() * 9000 + 1000);
+                createBody.put("username", username);
+                restTemplate.postForEntity(createUrl, new HttpEntity<>(createBody, authHeaders), Void.class);
+            }
+        }
+
+        // 3. Authenticate with Keycloak Direct Access Grant to obtain genuine user JWT
+        MultiValueMap<String, String> userCreds = new LinkedMultiValueMap<>();
+        userCreds.add("client_id", keycloakClientId);
+        userCreds.add("username", username);
+        userCreds.add("password", GOOGLE_AUTH_PASSWORD);
+        userCreds.add("grant_type", "password");
+
+        HttpEntity<MultiValueMap<String, String>> tokenReq = new HttpEntity<>(userCreds, formHeaders);
+        String tokenUrl = String.format("%s/realms/%s/protocol/openid-connect/token", keycloakUrl, realm);
+        ResponseEntity<Map> tokenRes = restTemplate.postForEntity(tokenUrl, tokenReq, Map.class);
+        if (tokenRes.getBody() == null || !tokenRes.getBody().containsKey("access_token")) {
+            throw new RuntimeException("Failed to authenticate user against Keycloak");
+        }
+
+        return (String) tokenRes.getBody().get("access_token");
+    }
+
+    private String extractUsernameFromJwt(String token) {
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length >= 2) {
+                byte[] decoded = Base64.getUrlDecoder().decode(parts[1]);
+                Map claims = objectMapper.readValue(decoded, Map.class);
+                return (String) claims.getOrDefault("preferred_username", claims.getOrDefault("sub", "user"));
+            }
+        } catch (Exception e) {
+            log.warn("Failed to extract username from JWT: {}", e.getMessage());
+        }
+        return "user";
     }
 
     public Map<String, Object> getStatus(User user) {
@@ -280,7 +527,7 @@ public class GmailService {
         Map<String, Object> map = new HashMap<>();
         map.put("id", node.get("id").asText());
         map.put("threadId", node.has("threadId") ? node.get("threadId").asText() : "");
-        map.put("preview", node.has("snippet") ? node.get("snippet").asText() : "");
+        map.put("preview", cleanEntityJunk(node.has("snippet") ? node.get("snippet").asText() : ""));
 
         Set<String> labels = new HashSet<>();
         if (node.has("labelIds")) {
@@ -350,7 +597,7 @@ public class GmailService {
         Map<String, Object> map = new HashMap<>();
         map.put("id", node.get("id").asText());
         map.put("threadId", node.path("threadId").asText());
-        map.put("preview", node.path("snippet").asText());
+        map.put("preview", cleanEntityJunk(node.path("snippet").asText()));
 
         Set<String> labels = new HashSet<>();
         if (node.has("labelIds")) {
@@ -396,12 +643,22 @@ public class GmailService {
         map.put("date", formatEmailDate(node.path("internalDate").asText(), dateStr));
         map.put("tag", determineTag(labels, subject));
 
-        // Extract body
-        String body = extractBody(node.path("payload"));
-        if (body == null || body.trim().isEmpty()) {
-            body = node.path("snippet").asText();
+        // Recursive extraction of rich HTML, text, and attachments
+        EmailContent emailContent = new EmailContent();
+        parsePayloadRecursive(node.path("payload"), emailContent);
+
+        String mainBody = emailContent.getHtmlBody();
+        if (mainBody == null || mainBody.trim().isEmpty()) {
+            mainBody = emailContent.getTextBody();
         }
-        map.put("body", body);
+        if (mainBody == null || mainBody.trim().isEmpty()) {
+            mainBody = cleanEntityJunk(node.path("snippet").asText());
+        }
+
+        map.put("body", mainBody);
+        map.put("htmlBody", emailContent.getHtmlBody());
+        map.put("textBody", emailContent.getTextBody());
+        map.put("attachments", emailContent.getAttachments());
 
         // Mark as read if unread
         if (labels.contains("UNREAD")) {
@@ -418,63 +675,111 @@ public class GmailService {
         return map;
     }
 
-    private String extractBody(JsonNode payload) {
-        if (payload == null) return "";
+    private static class EmailContent {
+        private String htmlBody = "";
+        private String textBody = "";
+        private final List<Map<String, Object>> attachments = new ArrayList<>();
 
-        String mimeType = payload.path("mimeType").asText();
-        JsonNode bodyNode = payload.path("body");
+        public String getHtmlBody() { return htmlBody; }
+        public void setHtmlBody(String htmlBody) { this.htmlBody = htmlBody; }
+        public String getTextBody() { return textBody; }
+        public void setTextBody(String textBody) { this.textBody = textBody; }
+        public List<Map<String, Object>> getAttachments() { return attachments; }
+    }
 
-        if (bodyNode.has("data") && (mimeType.startsWith("text/plain") || mimeType.startsWith("text/html"))) {
-            return decodeBase64Url(bodyNode.path("data").asText());
+    private void parsePayloadRecursive(JsonNode part, EmailContent content) {
+        if (part == null) return;
+
+        String mimeType = part.path("mimeType").asText("");
+        String filename = part.path("filename").asText("");
+        JsonNode bodyNode = part.path("body");
+        String attachmentId = bodyNode.path("attachmentId").asText("");
+
+        if (!filename.isEmpty() || !attachmentId.isEmpty()) {
+            if (!filename.isEmpty()) {
+                Map<String, Object> att = new HashMap<>();
+                att.put("attachmentId", attachmentId);
+                att.put("filename", filename);
+                att.put("mimeType", mimeType);
+                att.put("size", bodyNode.path("size").asLong(0));
+                content.getAttachments().add(att);
+            }
         }
 
-        JsonNode parts = payload.path("parts");
+        if (bodyNode.has("data")) {
+            String data = decodeBase64Url(bodyNode.path("data").asText());
+            if ("text/html".equalsIgnoreCase(mimeType) && content.getHtmlBody().isEmpty()) {
+                content.setHtmlBody(data);
+            } else if ("text/plain".equalsIgnoreCase(mimeType) && content.getTextBody().isEmpty()) {
+                content.setTextBody(cleanEntityJunk(data));
+            }
+        }
+
+        JsonNode parts = part.path("parts");
         if (parts.isArray()) {
-            // First check for plain text
-            for (JsonNode part : parts) {
-                String partMime = part.path("mimeType").asText();
-                if ("text/plain".equalsIgnoreCase(partMime) && part.path("body").has("data")) {
-                    return decodeBase64Url(part.path("body").path("data").asText());
-                }
+            for (JsonNode subPart : parts) {
+                parsePayloadRecursive(subPart, content);
             }
-            // Next check for text/html
-            for (JsonNode part : parts) {
-                String partMime = part.path("mimeType").asText();
-                if ("text/html".equalsIgnoreCase(partMime) && part.path("body").has("data")) {
-                    String html = decodeBase64Url(part.path("body").path("data").asText());
-                    return stripHtmlTags(html);
-                }
-            }
-            // Recurse into nested parts
-            for (JsonNode part : parts) {
-                String res = extractBody(part);
-                if (res != null && !res.trim().isEmpty()) return res;
-            }
-        }
-
-        return "";
-    }
-
-    private String decodeBase64Url(String data) {
-        try {
-            byte[] bytes = Base64.getUrlDecoder().decode(data);
-            return new String(bytes, StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            return "";
         }
     }
 
-    private String stripHtmlTags(String html) {
-        if (html == null) return "";
-        return html.replaceAll("<style([\\s\\S]+?)</style>", "")
-                .replaceAll("<script([\\s\\S]+?)</script>", "")
-                .replaceAll("<[^>]*>", " ")
-                .replaceAll("&nbsp;", " ")
-                .replaceAll("&amp;", "&")
-                .replaceAll("&lt;", "<")
-                .replaceAll("&gt;", ">")
-                .replaceAll("\\s+", " ")
-                .trim();
+    public static String cleanEntityJunk(String input) {
+        if (input == null) return "";
+        Pattern numericEntity = Pattern.compile("&#(x?[0-9a-fA-F]+);");
+        Matcher m = numericEntity.matcher(input);
+        StringBuilder sb = new StringBuilder();
+        while (m.find()) {
+            try {
+                String codeStr = m.group(1);
+                int codePoint = codeStr.startsWith("x") || codeStr.startsWith("X")
+                        ? Integer.parseInt(codeStr.substring(1), 16)
+                        : Integer.parseInt(codeStr);
+                if (codePoint == 8199 || codePoint == 65279 || codePoint == 847 || codePoint == 8203 || codePoint == 8204 || codePoint == 8205) {
+                    m.appendReplacement(sb, " ");
+                } else {
+                    m.appendReplacement(sb, Matcher.quoteReplacement(new String(Character.toChars(codePoint))));
+                }
+            } catch (Exception e) {
+                m.appendReplacement(sb, "");
+            }
+        }
+        m.appendTail(sb);
+        String unescaped = sb.toString();
+
+        unescaped = unescaped.replace("&nbsp;", " ")
+                             .replace("&amp;", "&")
+                             .replace("&lt;", "<")
+                             .replace("&gt;", ">")
+                             .replace("&quot;", "\"")
+                             .replace("&#39;", "'");
+
+        return unescaped.replaceAll("[\\u8199\\u65279\\u0847\\u200B\\u200C\\u200D\\uFEFF]+", " ")
+                        .replaceAll("\\s+", " ")
+                        .trim();
+    }
+
+    public ResponseEntity<byte[]> downloadAttachment(User user, String messageId, String attachmentId) {
+        String token = getValidAccessToken(user);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        HttpEntity<?> entity = new HttpEntity<>(headers);
+
+        String url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/" + messageId + "/attachments/" + attachmentId;
+        ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.GET, entity, JsonNode.class);
+
+        JsonNode node = response.getBody();
+        if (node == null || !node.has("data")) {
+            throw new RuntimeException("Attachment data not found");
+        }
+
+        String base64Data = node.get("data").asText();
+        byte[] data = Base64.getUrlDecoder().decode(base64Data);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(data);
     }
 
     public Map<String, Object> sendMessage(User user, String to, String subject, String body) {

@@ -142,4 +142,22 @@ public class GmailController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
         }
     }
+
+    @GetMapping("/messages/{messageId}/attachments/{attachmentId}")
+    public ResponseEntity<?> downloadAttachment(
+            @PathVariable String messageId,
+            @PathVariable String attachmentId,
+            Authentication authentication) {
+        User user = userSyncService.getOrCreateUser(authentication);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Not authenticated"));
+        }
+
+        try {
+            return gmailService.downloadAttachment(user, messageId, attachmentId);
+        } catch (Exception e) {
+            log.error("Failed to download attachment {} for message {}: {}", attachmentId, messageId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
+    }
 }

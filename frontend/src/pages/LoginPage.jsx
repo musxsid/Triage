@@ -18,16 +18,46 @@ function LoginPage() {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
     const user = params.get("username");
+    const error = params.get("error");
+    if (error) {
+      toast.error(decodeURIComponent(error));
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
     if (token) {
       localStorage.setItem("token", token);
+      const name = params.get("name");
+      const email = params.get("email");
+      const picture = params.get("picture");
       if (user) {
         localStorage.setItem("username", user);
-        localStorage.setItem("user", JSON.stringify({
+        const userData = {
           username: user,
-          email: `${user}@triage.io`,
-          firstName: user,
-        }));
+          name: name || user,
+          email: email || `${user}@triage.io`,
+          firstName: name ? name.split(" ")[0] : user,
+          lastName: name && name.includes(" ") ? name.substring(name.indexOf(" ") + 1) : "",
+          profilePicture: picture || null
+        };
+        localStorage.setItem("user", JSON.stringify(userData));
+
+        if (picture || name) {
+          fetch("http://localhost:8080/api/auth/update", {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              name: userData.name,
+              email: userData.email,
+              firstName: userData.firstName,
+              lastName: userData.lastName,
+              profilePicture: userData.profilePicture
+            })
+          }).catch(() => {});
+        }
       }
+      window.history.replaceState({}, document.title, window.location.pathname);
       toast.success("Welcome back!");
       navigate("/workspaces");
     }
@@ -299,7 +329,11 @@ function LoginPage() {
             type="button"
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
-            onClick={() => window.location.href = "http://localhost:8080/api/auth/google/login"}
+            onClick={() => {
+              localStorage.removeItem("token");
+              localStorage.removeItem("activeWorkspaceId");
+              window.location.href = "http://localhost:8080/api/auth/google/login";
+            }}
             className="w-full py-3 rounded-xl border border-white/40 dark:border-white/10 glass hover:bg-white/40 dark:hover:bg-white/10 text-text-primary dark:text-text-darkPrimary font-bold text-sm shadow-sm transition-all flex items-center justify-center gap-3 mb-5"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">

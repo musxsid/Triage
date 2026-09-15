@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Search, FileText, Plus, Star, ChevronDown } from "lucide-react";
 
-import { getNotes, deleteNote } from "../services/notesService";
+import { getNotes, getNotesWithCache, deleteNote } from "../services/notesService";
 import { getFolders } from "../services/folderService";
 import NotesGrid from "../components/notes/NotesGrid";
 
@@ -37,10 +37,15 @@ function DashboardPage() {
   }, []);
 
   const fetchNotes = async () => {
-    setLoading(true);
     try {
-      const res = await getNotes();
-      setNotes(res.data || []);
+      const initial = await getNotesWithCache((freshNotes) => {
+        setNotes(freshNotes || []);
+        setLoading(false);
+      });
+      if (initial && initial.data) {
+        setNotes(initial.data);
+        setLoading(false);
+      }
     } catch (err) {
       console.error("Failed to fetch notes:", err);
       if (err.response && (err.response.status === 403 || err.response.status === 404)) {

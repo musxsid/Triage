@@ -51,4 +51,38 @@ public class UserSyncService {
             return saved;
         });
     }
+
+    public User getOrCreateUserByUsername(String username) {
+        return getOrCreateUserWithProfile(username, null, null, null, null);
+    }
+
+    public User getOrCreateUserWithProfile(String username, String email, String firstName, String lastName, String picture) {
+        if (username == null || username.trim().isEmpty()) {
+            username = "user";
+        }
+        final String targetUsername = username;
+        User user = userRepository.findByUsername(targetUsername).orElseGet(() -> {
+            User newUser = new User();
+            newUser.setUsername(targetUsername);
+            return newUser;
+        });
+
+        if (email != null && !email.trim().isEmpty()) user.setEmail(email);
+        if (firstName != null && !firstName.trim().isEmpty()) user.setFirstName(firstName);
+        if (lastName != null && !lastName.trim().isEmpty()) user.setLastName(lastName);
+        if (picture != null && !picture.trim().isEmpty()) user.setProfilePicture(picture);
+
+        User saved = userRepository.save(user);
+
+        List<Workspace> workspaces = workspaceRepository.findByUser(saved);
+        if (workspaces.isEmpty()) {
+            Workspace defaultWs = new Workspace();
+            defaultWs.setName("Personal");
+            defaultWs.setIcon("💼");
+            defaultWs.setUser(saved);
+            workspaceRepository.save(defaultWs);
+        }
+
+        return saved;
+    }
 }

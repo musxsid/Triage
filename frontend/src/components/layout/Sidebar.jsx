@@ -72,10 +72,12 @@ const Sidebar = () => {
   }, []);
 
   const getWorkspaces = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
     try {
       const res = await axios.get("http://localhost:8080/api/workspaces", {
         withCredentials: true,
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       const fetchedWorkspaces = res.data || [];
       setWorkspaces(fetchedWorkspaces);
@@ -94,10 +96,12 @@ const Sidebar = () => {
 
   const getFolders = async (workspaceId) => {
     if (!workspaceId) return;
+    const token = localStorage.getItem("token");
+    if (!token) return;
     try {
       const res = await axios.get(`http://localhost:8080/api/folders?workspaceId=${workspaceId}`, {
         withCredentials: true,
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       setFolders(res.data || []);
     } catch (err) {

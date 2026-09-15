@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../services/notesService";
 import toast from "react-hot-toast";
@@ -13,6 +13,25 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+    const user = params.get("username");
+    if (token) {
+      localStorage.setItem("token", token);
+      if (user) {
+        localStorage.setItem("username", user);
+        localStorage.setItem("user", JSON.stringify({
+          username: user,
+          email: `${user}@triage.io`,
+          firstName: user,
+        }));
+      }
+      toast.success("Welcome back!");
+      navigate("/workspaces");
+    }
+  }, [navigate]);
 
   const handleLogin = async () => {
     if (!username || !password) {

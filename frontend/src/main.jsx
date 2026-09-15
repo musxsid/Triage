@@ -13,7 +13,8 @@ axios.interceptors.response.use(
   (error) => {
     if (error.response && error.response.status === 401) {
       const isAuthRoute = window.location.pathname === "/login" || window.location.pathname === "/signup" || window.location.pathname === "/";
-      if (!isAuthRoute && localStorage.getItem("token")) {
+      const isAuthOrIntegrationApi = error.config?.url?.includes("/api/auth/") || error.config?.url?.includes("/api/gmail/");
+      if (!isAuthRoute && !isAuthOrIntegrationApi && localStorage.getItem("token")) {
         localStorage.removeItem("token");
         localStorage.removeItem("activeWorkspaceId");
         window.location.href = "/login";

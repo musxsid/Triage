@@ -1,6 +1,6 @@
 // High-Performance Instant Cache & Offline Storage Manager
 
-const STORAGE_PREFIX = "simplynotes_cache_";
+const STORAGE_PREFIX = "triage_cache_";
 
 export const CacheService = {
   // Retrieve cached notes instantly (0ms latency)

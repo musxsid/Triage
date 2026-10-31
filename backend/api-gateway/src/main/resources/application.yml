@@ -51,5 +51,5 @@ spring:
 
 keycloak:
   auth-server-url: ${KEYCLOAK_URL:http://localhost:8081}
-  realm: simplynotes
-  client-id: simplynotes-app
+  realm: triage
+  client-id: triage-app

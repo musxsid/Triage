@@ -1,11 +1,11 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: simplynotes-postgres
+    container_name: triage-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: "200420"
-      POSTGRES_DB: simplynotes
+      POSTGRES_DB: triage
     ports:
       - "5432:5432"
     volumes:
@@ -18,17 +18,17 @@ services:
 
   mongodb:
     image: mongo:7.0
-    container_name: simplynotes-mongodb
+    container_name: triage-mongodb
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_DATABASE: simplynotes_cache
+      MONGO_INITDB_DATABASE: triage_cache
     volumes:
       - mongo_data:/data/db
 
   redis:
     image: redis:7-alpine
-    container_name: simplynotes-redis
+    container_name: triage-redis
     ports:
       - "6379:6379"
     healthcheck:
@@ -39,7 +39,7 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:24.0.4
-    container_name: simplynotes-keycloak
+    container_name: triage-keycloak
     command: start-dev --import-realm
     environment:
       KEYCLOAK_ADMIN: admin
@@ -47,12 +47,12 @@ services:
     ports:
       - "8081:8080"
     volumes:
-      - ./keycloak/simplynotes-realm.json:/opt/keycloak/data/import/simplynotes-realm.json
+      - ./keycloak/triage-realm.json:/opt/keycloak/data/import/triage-realm.json
 
   api-gateway:
     build:
       context: ./backend/api-gateway
-    container_name: simplynotes-api-gateway
+    container_name: triage-api-gateway
     ports:
       - "8080:8080"
     environment:
@@ -72,20 +72,20 @@ services:
   note-service:
     build:
       context: ./backend/note-service
-    container_name: simplynotes-note-service
+    container_name: triage-note-service
     ports:
       - "8082:8082"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/simplynotes
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/triage
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: "200420"
-      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/simplynotes
-      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/simplynotes/protocol/openid-connect/certs
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/triage
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/triage/protocol/openid-connect/certs
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:8080/api/auth/google/callback}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
-      ENCRYPTION_SECRET_KEY: ${ENCRYPTION_SECRET_KEY:-SimplyNotesEncryptionSecretKey32B}
+      ENCRYPTION_SECRET_KEY: ${ENCRYPTION_SECRET_KEY:-TriageEncryptionSecretKey32Bytes}
     depends_on:
       postgres:
         condition: service_healthy
@@ -95,13 +95,13 @@ services:
   ai-service:
     build:
       context: ./backend/ai-service
-    container_name: simplynotes-ai-service
+    container_name: triage-ai-service
     ports:
       - "8083:8083"
     environment:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/simplynotes
-      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/simplynotes/protocol/openid-connect/certs
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/triage
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/triage/protocol/openid-connect/certs
     depends_on:
       keycloak:
         condition: service_started
@@ -109,13 +109,13 @@ services:
   upload-service:
     build:
       context: ./backend/upload-service
-    container_name: simplynotes-upload-service
+    container_name: triage-upload-service
     ports:
       - "8084:8084"
     environment:
       UPLOAD_DIR: /uploads/
-      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/simplynotes
-      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/simplynotes/protocol/openid-connect/certs
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/triage
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/triage/protocol/openid-connect/certs
     volumes:
       - uploads_data:/uploads
     depends_on:
@@ -125,13 +125,13 @@ services:
   search-service:
     build:
       context: ./backend/search-service
-    container_name: simplynotes-search-service
+    container_name: triage-search-service
     ports:
       - "8085:8085"
     environment:
       NOTE_SERVICE_URL: http://note-service:8082
-      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/simplynotes
-      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/simplynotes/protocol/openid-connect/certs
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/triage
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/triage/protocol/openid-connect/certs
     depends_on:
       - note-service
       - keycloak
@@ -139,7 +139,7 @@ services:
   frontend:
     build:
       context: ./frontend
-    container_name: simplynotes-frontend
+    container_name: triage-frontend
     ports:
       - "3000:80"
     depends_on:

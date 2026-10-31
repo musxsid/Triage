@@ -1,4 +1,5 @@
 {
+  "name": "triage",
   "dependencies": {
     "framer-motion": "^12.38.0"
   }

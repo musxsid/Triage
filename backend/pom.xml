@@ -3,11 +3,11 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.siddharth.simplynotes</groupId>
-    <artifactId>simplynotes-backend-parent</artifactId>
+    <groupId>com.siddharth.triage</groupId>
+    <artifactId>triage-backend-parent</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>simplynotes-backend-parent</name>
+    <name>triage-backend-parent</name>
 
     <modules>
         <module>api-gateway</module>

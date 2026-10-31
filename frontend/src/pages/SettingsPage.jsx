@@ -159,7 +159,7 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            {/* SimplyNotes DB */}
+            {/* Triage DB */}
             <div className="p-4 rounded-2xl glass-subtle border border-white/25 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-xl bg-accent/15 text-accent flex items-center justify-center">
